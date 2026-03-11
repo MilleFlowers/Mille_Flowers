@@ -69,14 +69,16 @@
           <p class="checkout-section-title">Método de Pagamento</p>
 
           <div class="payment-methods">
+            <!-- Opção desativada por agora (requer Stripe)
             <label class="payment-option">
-              <input type="radio" name="metodo" value="cartao" checked onchange="showPaymentFields()">
+              <input type="radio" name="metodo" value="cartao" onchange="showPaymentFields()">
               <div class="payment-label">
                 <i class="fas fa-credit-card"></i> Cartão
               </div>
             </label>
+            -->
             <label class="payment-option">
-              <input type="radio" name="metodo" value="mbway" onchange="showPaymentFields()">
+              <input type="radio" name="metodo" value="mbway" checked onchange="showPaymentFields()">
               <div class="payment-label">
                 <i class="fas fa-mobile-alt"></i> MB Way
               </div>
@@ -89,8 +91,8 @@
             </label>
           </div>
 
-          <!-- Cartão Preview -->
-          <div id="cardFields">
+          <!-- MBWay -->
+          <div id="mbwayFields">
             <div class="credit-card-preview" id="cardPreview">
               <div class="card-chip"></div>
               <div class="card-num-display" id="cardNumDisplay">•••• •••• •••• ••••</div>

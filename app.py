@@ -9,10 +9,10 @@ from werkzeug.utils import secure_filename
 import requests
 
 app = Flask(__name__)
-app.secret_key = "mille_secret_key"
+app.secret_key = os.environ.get("SECRET_KEY", "mille_secret_key")
 
-# Stripe API key (coloca a tua chave)
-stripe.api_key = "SUA_CHAVE_SECRETA_AQUI"
+# Stripe API key (usa variável de ambiente em produção)
+stripe.api_key = os.environ.get("STRIPE_API_KEY", "SUA_CHAVE_SECRETA_AQUI")
 
 # Email do administrador
 ADMIN_EMAIL = "filipenetocunha@gmail.com"
@@ -994,6 +994,8 @@ def gerir_cores(produto_id):
 
 # ---------------- INICIALIZAÇÃO ----------------
 
+# Inicializa a BD ao arrancar (importante para o Render)
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
