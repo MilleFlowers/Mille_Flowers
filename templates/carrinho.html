@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Carrinho — Mille Flowers{% endblock %}
+
+{% block content %}
+
+<div class="page-banner">
+    <div class="container">
+        <h1>O Meu Carrinho</h1>
+        <p>Reveja os seus produtos antes de pagar</p>
+    </div>
+</div>
+
+<section class="section">
+    <div class="container">
+        {% if carrinho %}
+        <div class="carrinho-container">
+
+            <!-- Items -->
+            <div class="cart-items-col">
+
+                {% for item in carrinho %}
+                <div class="carrinho-item">
+
+                    {% if 'imagem' in item %}
+                    <img src="{{ url_for('static', filename='img/' + item['imagem']) }}" alt="{{ item['nome'] }}">
+                    {% endif %}
+
+                    <div class="carrinho-info">
+                        <h4>{{ item['nome'] }}</h4>
+                        <p class="cart-item-sub" style="margin-bottom:4px;">
+                            <i class="fas fa-palette" style="color:var(--color-gold);"></i>
+                            Cor: {{ item['cor'] if item['cor'] != 'normal' else '—' }}
+                        </p>
+                        <p class="cart-item-sub">
+                            € {{ "%.2f"|format(item['preco']) }} × {{ item['quantidade'] }}
+                        </p>
+                    </div>
+
+                    <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+                        <span class="cart-item-price-big">
+                            € {{ "%.2f"|format(item['preco'] * item['quantidade']) }}
+                        </span>
+                        <a href="{{ url_for('remover', index=loop.index0) }}" class="btn btn-outline"
+                            style="font-size:0.75rem; padding:7px 14px; color:#c0392b; border-color:#c0392b;"
+                            onclick="return confirm('Remover este item?')">
+                            <i class="fas fa-trash"></i> Remover
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div style="margin-top:20px;">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline">
+                        <i class="fas fa-arrow-left"></i> Continuar a Comprar
+                    </a>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="cart-summary-box">
+                <h3>Resumo</h3>
+
+                <div class="summary-line">
+                    <span>Subtotal</span>
+                    <span>€ {{ "%.2f"|format(total) }}</span>
+                </div>
+                <div class="summary-line">
+                    <span>Portes</span>
+                    <span>{{ "Grátis" if total >= 30 else "€ 3,99" }}</span>
+                </div>
+                <div class="summary-line summary-total">
+                    <span>Total</span>
+                    <strong>€ {{ "%.2f"|format(total if total >= 30 else total + 3.99) }}</strong>
+                </div>
+
+                <!-- Coupon (visual only) -->
+                <div style="margin-top:18px;">
+                    <label
+                        style="font-size:0.82rem; font-weight:700; color:var(--color-vinho); display:block; margin-bottom:8px;">
+                        Código Promocional
+                    </label>
+                    <div class="coupon-row">
+                        <input type="text" class="coupon-input" placeholder="Ex: MILLE10">
+                        <button class="btn" onclick="applyCoupon(event)" style="padding:10px 16px; font-size:0.78rem;">
+                            Aplicar
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px;">
+                    {% if session.usuario_id %}
+                    <a href="{{ url_for('pagamento') }}" class="btn btn-block" style="text-align:center;">
+                        <i class="fas fa-lock"></i> Finalizar Compra
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-block" style="text-align:center;">
+                        <i class="fas fa-sign-in-alt"></i> Entrar para Pagar
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+        {% else %}
+        <div style="text-align:center; padding: 80px 20px;">
+            <i class="fas fa-shopping-bag"
+                style="font-size:4rem; color:var(--color-rosa); margin-bottom:20px; display:block;"></i>
+            <h2 style="font-size:2.2rem; color:var(--color-vinho); margin-bottom:14px;">O seu carrinho está vazio</h2>
+            <p style="color:var(--color-text-lt); margin-bottom:28px; font-style:italic;">Descubra as nossas flores
+                artesanais</p>
+            <a href="{{ url_for('index') }}" class="btn btn-gold">Ver Coleção</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+    function applyCoupon(e) {
+        e.preventDefault();
+        const input = e.target.previousElementSibling;
+        const code = input.value.trim().toUpperCase();
+        if (code === 'MILLE10') {
+            if (typeof showToast === 'function') showToast('🎉 Cupão aplicado! 10% de desconto.');
+            input.style.borderColor = 'var(--color-gold)';
+        } else {
+            if (typeof showToast === 'function') showToast('Código inválido.', 'error');
+            input.style.borderColor = '#c0392b';
+        }
+    }
+</script>
+{% endblock %}

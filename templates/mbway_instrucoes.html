@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Pagar com MB Way — Mille Flowers{% endblock %}
+
+{% block content %}
+<section style="min-height:80vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:60px 20px;">
+    <div style="max-width:560px; width:100%; background:white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--color-border); text-align:center;">
+        <h2 style="font-size:2.2rem; color:var(--color-vinho); margin-bottom:14px;"><i class="fas fa-mobile-alt"></i> Pagamento MB Way</h2>
+        
+        <p style="font-size:1.1rem; margin-bottom:20px; color:var(--color-text);">Quase lá! Para finalizar a sua encomenda, por favor envie o pagamento via MB Way.</p>
+        
+        <div style="background:var(--color-rosa-lt); padding: 20px; border-radius: 8px; margin-bottom: 24px; text-align: left; border: 1px solid var(--color-rosa);">
+            <p style="margin-bottom:8px;"><strong>Valor a pagar:</strong> <span style="font-size:1.2rem; color:var(--color-vinho); font-weight:bold;">€ {{ "%.2f"|format(valor) }}</span></p>
+            <p style="margin-bottom:8px;"><strong>Número MB Way:</strong> <span style="font-size:1.1rem; color:var(--color-vinho); font-weight:bold;">{{ telefone }}</span></p>
+            <p><strong>Descrição do pagamento:</strong> <span style="font-family: monospace; font-size:1.1rem; background:#fff; padding:4px 8px; border-radius:4px; border:1px solid #ccc; font-weight:bold;">{{ order_id }}</span></p>
+        </div>
+        
+        <p style="font-size:0.95rem; color:var(--color-text-lt); margin-bottom: 24px; background:#fff3cd; padding:12px; border-radius:8px; border:1px solid #ffeeba; text-align:left;">
+            ⚠️ <strong>Importante:</strong> Coloque o código <strong>{{ order_id }}</strong> na descrição da transferência para que possamos identificar a sua compra automaticamente. O seu pedido só será processado após confirmação.
+        </p>
+
+        <button onclick="pagarMBWay()" class="btn btn-gold" style="font-size: 1.1rem; padding: 14px 32px; width: 100%; margin-bottom: 16px;">
+            <i class="fas fa-paper-plane"></i> Pagar com MB Way App
+        </button>
+        
+        <a href="{{ url_for('sucesso') }}" class="btn btn-outline" style="width: 100%;">
+            Já fiz o pagamento
+        </a>
+
+        <script>
+            function pagarMBWay() {
+                if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    window.location.href = "mbway://payment?phone={{ telefone }}&amount={{ valor }}";
+                } else {
+                    alert("A abertura da app ocorre apenas em telemóveis.\n\nPor favor, faça o envio de {{ valor }}€ para o número {{ telefone }}.\nUse '{{ order_id }}' na descrição!");
+                }
+            }
+        </script>
+    </div>
+</section>
+{% endblock %}

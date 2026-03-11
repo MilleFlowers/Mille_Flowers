@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Login & Registo — Mille Flowers{% endblock %}
+
+{% block content %}
+<div class="auth-page-wrapper">
+    <div class="container" style="max-width:560px; width:100%;">
+
+        <!-- Tabs -->
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">
+                <i class="fas fa-sign-in-alt"></i> Entrar
+            </button>
+            <button class="auth-tab" id="tabRegisto" onclick="switchTab('registo')">
+                <i class="fas fa-user-plus"></i> Criar Conta
+            </button>
+        </div>
+
+        <!-- Login Panel -->
+        <div id="panelLogin" class="auth-panel-block active">
+            <div class="auth-box">
+                <div class="auth-box-header">
+                    <h2>Bem-vindo de volta 🌹</h2>
+                    <p>Entre na sua conta Mille Flowers</p>
+                </div>
+                <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <div class="input-icon-wrap">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" name="email" placeholder="o.seu@email.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-icon-wrap">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" name="password" id="loginPwd" placeholder="A sua password" required>
+                            <button type="button" class="toggle-pwd" onclick="togglePwd('loginPwd', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="auth-btn btn btn-block" style="margin-top:20px;">
+                        <i class="fas fa-sign-in-alt"></i> Entrar
+                    </button>
+                </form>
+                <p style="text-align:center; margin-top:16px; font-size:0.88rem; color:var(--color-text-lt);">
+                    Ainda não tem conta? <a href="#" onclick="switchTab('registo')"
+                        style="color:var(--color-vinho); font-weight:700;">Registe-se aqui</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Registo Panel -->
+        <div id="panelRegisto" class="auth-panel-block">
+            <div class="auth-box">
+                <div class="auth-box-header">
+                    <h2>Junte-se à Mille 🌺</h2>
+                    <p>Crie a sua conta e ganhe 10% de desconto</p>
+                </div>
+                <form method="POST" action="{{ url_for('registro') }}" id="registoForm">
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <div class="input-icon-wrap">
+                            <i class="fas fa-user input-icon"></i>
+                            <input type="text" name="nome" placeholder="O seu nome" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <div class="input-icon-wrap">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" name="email" placeholder="o.seu@email.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-icon-wrap">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" name="password" id="regPwd" placeholder="Mínimo 8 caracteres"
+                                required oninput="checkStrength(this.value)">
+                            <button type="button" class="toggle-pwd" onclick="togglePwd('regPwd', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="pwd-strength">
+                            <div class="pwd-bar" id="pwdBar"></div>
+                        </div>
+                        <small id="pwdLabel" style="color:var(--color-text-lt); font-size:0.78rem;"></small>
+                    </div>
+                    <button type="submit" class="auth-btn btn btn-block" style="margin-top:20px;">
+                        <i class="fas fa-user-plus"></i> Criar Conta
+                    </button>
+                </form>
+                <p style="text-align:center; margin-top:16px; font-size:0.88rem; color:var(--color-text-lt);">
+                    Já tem conta? <a href="#" onclick="switchTab('login')"
+                        style="color:var(--color-vinho); font-weight:700;">Entrar</a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        ['Login', 'Registo'].forEach(t => {
+            document.getElementById('tab' + t).classList.remove('active');
+            document.getElementById('panel' + t).classList.remove('active');
+        });
+        document.getElementById('tab' + (tab === 'login' ? 'Login' : 'Registo')).classList.add('active');
+        document.getElementById('panel' + (tab === 'login' ? 'Login' : 'Registo')).classList.add('active');
+    }
+
+    function togglePwd(id, btn) {
+        const input = document.getElementById(id);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+
+    function checkStrength(pwd) {
+        let score = 0;
+        if (pwd.length >= 8) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/[0-9]/.test(pwd)) score++;
+        if (/[^A-Za-z0-9]/.test(pwd)) score++;
+        const levels = ['', 'Fraca', 'Razoável', 'Boa', 'Forte'];
+        const colors = ['', '#c0392b', '#e67e22', '#3498db', '#27ae60'];
+        const bar = document.getElementById('pwdBar');
+        bar.style.width = (score * 25) + '%';
+        bar.style.background = colors[score];
+        document.getElementById('pwdLabel').textContent = score ? levels[score] : '';
+        document.getElementById('pwdLabel').style.color = colors[score];
+    }
+</script>
+{% endblock %}
