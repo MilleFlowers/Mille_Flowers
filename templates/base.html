@@ -113,7 +113,7 @@
             {% if session.carrinho %}
             {% for item in session.carrinho %}
             <div class="mini-cart-item">
-                <img src="{{ url_for('static', filename='img/' + item.imagem) }}" alt="{{ item.nome }}"
+                <img src="{{ url_for('serve_produto_imagem', produto_id=item.id) }}" alt="{{ item.nome }}"
                     class="mini-cart-img">
                 <div class="mini-cart-info">
                     <p class="mini-cart-name">{{ item.nome }}</p>

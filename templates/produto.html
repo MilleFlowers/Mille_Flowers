@@ -16,7 +16,7 @@
 
             <!-- Imagem -->
             <div class="produto-img">
-                <img id="imagem-produto" src="{{ url_for('static', filename='img/' + produto.imagem) }}"
+                <img id="imagem-produto" src="{{ url_for('serve_produto_imagem', produto_id=produto.id) }}"
                     alt="{{ produto.nome }}"
                     style="width:100%; border-radius:16px; box-shadow: 0 8px 30px rgba(123,30,58,0.18);">
             </div>
@@ -195,7 +195,7 @@
             {% for p in produtos_rel %}
             <div class="product-card">
                 <div class="product-img-wrap">
-                    <img src="{{ url_for('static', filename='img/' + p['imagem']) }}" alt="{{ p['nome'] }}">
+                    <img src="{{ url_for('serve_produto_imagem', produto_id=p['id']) }}" alt="{{ p['nome'] }}">
                     <div class="product-overlay">
                         <a href="{{ url_for('produto', id=p['id']) }}" class="overlay-btn"><i
                                 class="fas fa-eye"></i></a>

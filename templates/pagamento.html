@@ -196,10 +196,8 @@
         <h3 style="font-size:1.5rem; color:var(--color-vinho); margin-bottom:18px;">Resumo</h3>
         {% for item in carrinho %}
         <div style="display:flex; gap:12px; margin-bottom:14px; align-items:center;">
-          {% if 'imagem' in item %}
-          <img src="{{ url_for('static', filename='img/' + item['imagem']) }}"
+          <img src="{{ url_for('serve_produto_imagem', produto_id=item['id']) }}"
             style="width:56px; height:56px; object-fit:cover; border-radius:8px; border:2px solid var(--color-rosa);">
-          {% endif %}
           <div style="flex:1;">
             <p style="font-weight:700; font-size:0.88rem; color:var(--color-vinho);">{{ item['nome'] }}</p>
             <p style="font-size:0.8rem; color:var(--color-text-lt);">{{ item['cor'] if item['cor'] != 'normal' else ''

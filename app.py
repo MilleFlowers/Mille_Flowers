@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import json
+import mimetypes
 from datetime import datetime
 import stripe
 from flask import Flask, render_template, request, redirect, session, url_for, flash
@@ -15,7 +16,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "mille_secret_key")
 stripe.api_key = os.environ.get("STRIPE_API_KEY", "SUA_CHAVE_SECRETA_AQUI")
 
 # Email do administrador
-ADMIN_EMAIL = "camillealmeida2019@gmail.com"
+ADMIN_EMAIL = "filipenetocunha@gmail.com"
 
 # ---------------- Context processor ----------------
 
@@ -56,6 +57,8 @@ def init_db():
             cor TEXT NOT NULL,
             preco REAL NOT NULL,
             imagem TEXT NOT NULL,
+            imagem_blob BLOB,
+            imagem_mimetype TEXT,
             esgotado INTEGER DEFAULT 0,
             cores_esgotadas TEXT DEFAULT ''
         )
@@ -130,6 +133,16 @@ def init_db():
             data TEXT NOT NULL
         )
     """)
+    # Migração para imagens persistentes
+    try:
+        conn.execute("ALTER TABLE produtos ADD COLUMN imagem_blob BLOB")
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE produtos ADD COLUMN imagem_mimetype TEXT")
+    except Exception:
+        pass
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS compras (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,6 +200,22 @@ def index():
         
     conn.close()
     return render_template("index.html", produtos=produtos)
+
+@app.route("/produto/imagem/<int:produto_id>")
+def serve_produto_imagem(produto_id):
+    conn = get_db()
+    produto = conn.execute("SELECT imagem_blob, imagem_mimetype, imagem FROM produtos WHERE id = ?", (produto_id,)).fetchone()
+    conn.close()
+
+    if produto and produto["imagem_blob"]:
+        from flask import Response
+        return Response(produto["imagem_blob"], mimetype=produto["imagem_mimetype"] or "image/jpeg")
+    
+    # Fallback to static if no blob exists
+    if produto and produto["imagem"]:
+        return redirect(url_for('static', filename='img/' + produto["imagem"]))
+    
+    return "Imagem não encontrada", 404
 
 @app.route("/produto/<int:id>")
 def produto(id):
@@ -641,11 +670,18 @@ def adicionar_produto():
     cor = request.form.get("cor")
     preco = request.form.get("preco")
 
-    imagem = "default.jpeg"
+    imagem_blob = None
+    imagem_mimetype = None
     file = request.files.get("imagem_upload")
     
     if file and file.filename != "":
         filename = secure_filename(file.filename)
+        # Ler conteúdo para o banco de dados
+        imagem_blob = file.read()
+        imagem_mimetype = file.content_type
+        
+        # Opcional: Salvar em disco também como cache/fallback
+        file.seek(0)
         upload_folder = os.path.join(app.root_path, 'static', 'img')
         os.makedirs(upload_folder, exist_ok=True)
         file_path = os.path.join(upload_folder, filename)
@@ -667,8 +703,8 @@ def adicionar_produto():
 
     conn = get_db()
     conn.execute(
-        "INSERT INTO produtos (nome, cor, preco, imagem) VALUES (?, ?, ?, ?)",
-        (nome, cor, preco, imagem)
+        "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype) VALUES (?, ?, ?, ?, ?, ?)",
+        (nome, cor, preco, imagem, imagem_blob, imagem_mimetype)
     )
     conn.commit()
     conn.close()
@@ -779,6 +815,9 @@ def editar_produto(produto_id):
 
         # Verifica se um arquivo foi enviado (imagem_upload)
         file = request.files.get("imagem_upload")
+        imagem_blob = None
+        imagem_mimetype = None
+
         if file and file.filename != "":
             filename = secure_filename(file.filename)
             upload_folder = os.path.join(app.root_path, 'static', 'img')
@@ -788,38 +827,41 @@ def editar_produto(produto_id):
             # Se o ficheiro já existe e o utilizador ainda não confirmou substituição
             if os.path.exists(file_path) and force_replace != "true":
                 # Salvar temporariamente caso ele queira confirmar e fechar
-                # Uma forma simples é redirecionar para uma página de aviso e passar os dados actuais 
-                # para que eles não se percam.
-                
                 # Guarda temporariamente
                 temp_folder = os.path.join(app.root_path, 'static', 'tmp')
                 os.makedirs(temp_folder, exist_ok=True)
                 temp_path = os.path.join(temp_folder, filename)
                 file.save(temp_path)
                 
-                # Redireciona para página de confirmação (passamos os dados via sessão momentânea)
+                # Redireciona para página de confirmação
                 session['upload_pendente'] = {
                     'produto_id': produto_id,
                     'nome': nome,
                     'cor': cor,
                     'preco': preco,
-                    'filename': filename
+                    'filename': filename,
+                    'mimetype': file.content_type
                 }
                 return redirect(url_for('confirmar_substituicao'))
                 
             else:
                 # O utilizador forçou a substituição ou o ficheiro não existia
+                imagem_blob = file.read()
+                imagem_mimetype = file.content_type
+                file.seek(0)
                 file.save(file_path)
                 imagem = filename
 
         # Se viemos de uma confirmação forçada (sem ficheiro no request, mas com forçar substituição)
-        # O ficheiro está em temp
         if force_replace == "true" and not file:
             filename = request.form.get("imagem_text")
             temp_path = os.path.join(app.root_path, 'static', 'tmp', filename)
             file_path = os.path.join(app.root_path, 'static', 'img', filename)
             
             if os.path.exists(temp_path):
+                with open(temp_path, "rb") as f:
+                    imagem_blob = f.read()
+                imagem_mimetype = mimetypes.guess_type(filename)[0]
                 # Move do tmp para o img
                 os.replace(temp_path, file_path)
                 imagem = filename
@@ -834,10 +876,16 @@ def editar_produto(produto_id):
             flash("Preço inválido.")
             return redirect(url_for("editar_produto", produto_id=produto_id))
 
-        conn.execute(
-            "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem = ? WHERE id = ?",
-            (nome, cor, preco, imagem, produto_id)
-        )
+        if imagem_blob:
+            conn.execute(
+                "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem = ?, imagem_blob = ?, imagem_mimetype = ? WHERE id = ?",
+                (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, produto_id)
+            )
+        else:
+            conn.execute(
+                "UPDATE produtos SET nome = ?, cor = ?, preco = ? WHERE id = ?",
+                (nome, cor, preco, produto_id)
+            )
         conn.commit()
         conn.close()
 
@@ -907,25 +955,25 @@ def confirmar_substituicao():
             return redirect(url_for("editar_produto", produto_id=produto_id))
             
         elif acao == "substituir":
-            # Força o fluxo normal fingindo ser o POST do form de edição, 
-            # mas dizendo para ignorar o upload porque o ficheiro já está na cache
-            # Nós podemos fazer o update direto aqui.
-            
             nome = dados_pendentes['nome']
             cor = dados_pendentes['cor']
             preco = dados_pendentes['preco']
             filename = dados_pendentes['filename']
+            mimetype = dados_pendentes.get('mimetype') or mimetypes.guess_type(filename)[0]
             
-            # Move out of temp
+            # Move out of temp and read blob
             temp_path = os.path.join(app.root_path, 'static', 'tmp', filename)
             file_path = os.path.join(app.root_path, 'static', 'img', filename)
+            imagem_blob = None
             if os.path.exists(temp_path):
+                with open(temp_path, "rb") as f:
+                    imagem_blob = f.read()
                 os.replace(temp_path, file_path)
             
             conn = get_db()
             conn.execute(
-                "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem = ? WHERE id = ?",
-                (nome, cor, preco, filename, produto_id)
+                "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem = ?, imagem_blob = ?, imagem_mimetype = ? WHERE id = ?",
+                (nome, cor, preco, filename, imagem_blob, mimetype, produto_id)
             )
             conn.commit()
             conn.close()
@@ -998,6 +1046,4 @@ def gerir_cores(produto_id):
 init_db()
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(debug=True)

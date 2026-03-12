@@ -2306,16 +2306,21 @@ select.form-control {
    RESPONSIVE
 ══════════════════════════════════════════ */
 @media (max-width: 992px) {
+    .header-search {
+        display: none;
+    }
 
     .produto-container,
     .product-detail-container {
         grid-template-columns: 1fr;
-        padding: 30px;
+        padding: 20px;
         gap: 30px;
     }
 
     .produto-img {
         position: static;
+        max-width: 500px;
+        margin: 0 auto;
     }
 
     .carrinho-container,
@@ -2325,6 +2330,7 @@ select.form-control {
 
     .cart-summary-box {
         position: static;
+        margin-top: 30px;
     }
 
     .checkout-layout {
@@ -2333,33 +2339,49 @@ select.form-control {
 
     .checkout-aside {
         position: static;
+        margin-top: 30px;
     }
 }
 
 @media (max-width: 768px) {
+    .container {
+        padding: 0 16px;
+    }
+
     .mobile-menu-btn {
         display: block;
     }
 
+    .header-icons {
+        gap: 12px;
+    }
+
     .main-nav {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 280px;
+        height: 100%;
         background: var(--color-vinho);
-        display: none;
-        padding: 20px 0;
-        box-shadow: var(--shadow-md);
+        display: block;
+        padding: 80px 30px;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.3);
+        transition: var(--transition);
+        z-index: 1100;
     }
 
     .main-nav.active {
-        display: block;
+        left: 0;
     }
 
     .main-nav ul {
         flex-direction: column;
-        align-items: center;
-        gap: 18px;
+        align-items: flex-start;
+        gap: 25px;
+    }
+
+    .main-nav a {
+        font-size: 1.1rem;
     }
 
     .hero h1 {
@@ -2367,7 +2389,12 @@ select.form-control {
     }
 
     .hero p {
-        font-size: 0.9rem;
+        font-size: 1rem;
+    }
+
+    .page-banner {
+        min-height: 180px;
+        padding: 30px 15px;
     }
 
     .page-banner h1 {
@@ -2380,7 +2407,12 @@ select.form-control {
 
     .grid,
     .products-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .product-img-wrap {
+        height: 200px;
     }
 
     .auth-box {
@@ -2388,23 +2420,19 @@ select.form-control {
     }
 
     .section {
-        padding: 60px 0;
+        padding: 50px 0;
     }
 
     .whatsapp-float {
         width: 50px;
         height: 50px;
-        bottom: 18px;
-        right: 18px;
-        font-size: 1.4rem;
+        bottom: 20px;
+        right: 20px;
+        font-size: 1.5rem;
     }
 
     .cart-sidebar {
         width: 100%;
-    }
-
-    .content {
-        padding: 20px;
     }
 }
 
@@ -2413,9 +2441,19 @@ select.form-control {
         font-size: 2.2rem;
     }
 
+    .hero-content {
+        padding: 40px 10px;
+    }
+
     .grid,
     .products-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
+        max-width: 320px;
+        margin: 0 auto;
+    }
+
+    .product-img-wrap {
+        height: 280px;
     }
 
     .payment-methods {
@@ -2429,14 +2467,23 @@ select.form-control {
 
     .checkout-steps {
         gap: 4px;
+        font-size: 0.7rem;
     }
 
     .chk-step-divider {
-        width: 28px;
+        width: 20px;
     }
 
     .form-row {
         flex-direction: column;
+    }
+
+    .site-logo img {
+        height: 40px;
+    }
+
+    .site-logo {
+        font-size: 1.5rem;
     }
 }
 
