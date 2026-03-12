@@ -264,7 +264,11 @@
         if (!select) return;
         
         let cor = select.value.replaceAll(" ", "_");
-        let nome = "{{ produto.nome }}";
+        let nomeRaw = "{{ produto.nome }}";
+        
+        // Capitalize Name explicitly in Javascript to match the API expectation (e.g. 'Gerbera', 'Rosa')
+        let nome = nomeRaw.charAt(0).toUpperCase() + nomeRaw.slice(1).toLowerCase();
+        
         let mainImg = document.getElementById("imagem-produto");
         
         // Se temos um URL externo, não tentamos carregar ficheiro local de cores
@@ -275,7 +279,7 @@
             return;
         }
 
-        let novaSrc = "/produto/imagem_cor/" + nome.toLowerCase() + "/" + cor;
+        let novaSrc = "/produto/imagem_cor/" + nome + "/" + cor;
         
         // Verificar se a imagem existe antes de trocar para evitar o ícone de erro
         let tempImg = new Image();
