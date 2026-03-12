@@ -31,6 +31,7 @@
 
     <!-- Header -->
     <header id="mainHeader">
+        <div class="menu-overlay" id="menuOverlay"></div>
         <div class="container header-inner">
 
             <!-- Logo -->
@@ -303,11 +304,25 @@
         /* ── Mobile Menu ── */
         const mobileBtn = document.getElementById('mobileMenuBtn');
         const mainNav = document.getElementById('mainNav');
+        const menuOverlay = document.getElementById('menuOverlay');
+        
+        function toggleMenu() {
+            mainNav.classList.toggle('active');
+            menuOverlay.classList.toggle('active');
+            const icon = mobileBtn.querySelector('i');
+            icon.className = mainNav.classList.contains('active') ? 'fas fa-times' : 'fas fa-bars';
+            document.body.style.overflow = mainNav.classList.contains('active') ? 'hidden' : '';
+        }
+
         if (mobileBtn && mainNav) {
-            mobileBtn.addEventListener('click', () => {
-                mainNav.classList.toggle('active');
-                const icon = mobileBtn.querySelector('i');
-                icon.className = mainNav.classList.contains('active') ? 'fas fa-times' : 'fas fa-bars';
+            mobileBtn.addEventListener('click', toggleMenu);
+            menuOverlay?.addEventListener('click', toggleMenu);
+            
+            // Close menu when clicking a link
+            mainNav.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (mainNav.classList.contains('active')) toggleMenu();
+                });
             });
         }
 

@@ -34,10 +34,14 @@ def inject_globals():
         now=datetime.now()
     )
 
-# ---------------- Database helper ----------------
+# Configuração da Base de Dados (Configurável via variável de ambiente para o Render)
+DATABASE = os.environ.get('DATABASE_URL', 'database.db')
+if DATABASE.startswith("sqlite:///"):
+    DATABASE = DATABASE.replace("sqlite:///", "")
+DATABASE = os.environ.get('DATABASE_PATH', DATABASE)
 
 def get_db():
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
