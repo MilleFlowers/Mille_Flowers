@@ -1,19 +1,12 @@
 {% extends "base.html" %}
-{% block title %}{{ produto.nome }} — Mille Flowers{% endblock %}
+{% block title %}Produto — Mille Flowers{% endblock %}
 
 {% block content %}
 
-<div class="page-banner page-banner-produto">
+<div class="page-banner">
     <div class="container">
-        <nav class="breadcrumb-nav">
-            <a href="{{ url_for('index') }}">Home</a>
-            <i class="fas fa-chevron-right"></i>
-            <a href="{{ url_for('index') }}#colecao">Coleção</a>
-            <i class="fas fa-chevron-right"></i>
-            <span>{{ produto.nome }}</span>
-        </nav>
         <h1>{{ produto.nome }}</h1>
-        <p>Flor artesanal de seda e cetim premium</p>
+        <p>Detalhes do produto</p>
     </div>
 </div>
 
@@ -23,27 +16,13 @@
 
             <!-- Imagem -->
             <div class="produto-img">
-                <div class="produto-img-frame">
-                    <img id="imagem-produto"
-                        src="{{ produto.imagem_url if produto.imagem_url else url_for('serve_produto_imagem', produto_id=produto.id) }}"
-                        alt="{{ produto.nome }}">
-                    {% if produto.esgotado == 1 %}
-                    <div class="produto-img-overlay-badge">Esgotado</div>
-                    {% endif %}
-                </div>
+                <img id="imagem-produto" src="{{ produto.imagem_url if produto.imagem_url else url_for('serve_produto_imagem', produto_id=produto.id) }}"
+                    alt="{{ produto.nome }}"
+                    style="width:100%; border-radius:16px; box-shadow: 0 8px 30px rgba(123,30,58,0.18);">
             </div>
 
             <!-- Info -->
             <div class="produto-info">
-                <div class="produto-meta-top">
-                    <span class="produto-category-pill"><i class="fas fa-leaf"></i> Flores Artesanais</span>
-                    {% if produto.esgotado != 1 %}
-                    <span class="produto-stock-pill in-stock"><i class="fas fa-check-circle"></i> Em Stock</span>
-                    {% else %}
-                    <span class="produto-stock-pill out-stock"><i class="fas fa-times-circle"></i> Esgotado</span>
-                    {% endif %}
-                </div>
-
                 <h2>{{ produto.nome }}</h2>
                 <p class="price">€ {{ "%.2f"|format(produto.preco) }}</p>
 
@@ -53,12 +32,11 @@
                 </p>
 
                 {% if produto.esgotado == 1 %}
-                <div class="esgotado-box">
-                    <i class="fas fa-hourglass-half"></i>
-                    <div>
-                        <strong>Produto Temporariamente Indisponível</strong>
-                        <p>Este produto está esgotado. Contacte-nos para saber quando estará disponível.</p>
-                    </div>
+                <div style="margin-top:20px;">
+                    <p style="color:red; font-weight:bold; font-size:18px;">
+                        ❌ Produto Esgotado
+                    </p>
+                    <p>Este produto está temporariamente indisponível.</p>
                 </div>
                 {% else %}
                 <form action="{{ url_for('adicionar_carrinho') }}" method="POST">
@@ -102,20 +80,14 @@
                         </div>
                     </div>
 
-                    <button type="submit" id="btn-comprar" class="btn btn-block btn-comprar-main" style="margin-top:20px;">
+                    <button type="submit" id="btn-comprar" class="btn btn-block" style="margin-top:20px;">
                         <i class="fas fa-shopping-bag"></i> Adicionar ao Carrinho
                     </button>
                 </form>
                 {% endif %}
 
-                <!-- Trust Badges -->
-                <div class="trust-badges">
-                    <div class="trust-badge"><i class="fas fa-shield-alt"></i><span>Compra Segura</span></div>
-                    <div class="trust-badge"><i class="fas fa-truck"></i><span>Envio Portugal</span></div>
-                    <div class="trust-badge"><i class="fas fa-hand-sparkles"></i><span>Artesanal</span></div>
-                </div>
-
                 <div class="meta-tags">
+                    <p><strong>Categoria:</strong> Flores Artesanais</p>
                     <p><strong>Prazo de confecção:</strong> 3 a 5 dias úteis</p>
                     <p><strong>Material:</strong> Seda & Cetim Premium</p>
                 </div>
@@ -124,7 +96,6 @@
         </div>
     </div>
 </section>
-
 
 <!-- Secção de Avaliações -->
 <section class="section section-bg" id="avaliacoes">
@@ -224,8 +195,7 @@
             {% for p in produtos_rel %}
             <div class="product-card">
                 <div class="product-img-wrap">
-                    <img src="{{ p['imagem_url'] if p['imagem_url'] else url_for('serve_produto_imagem', produto_id=p['id']) }}"
-                        alt="{{ p['nome'] }}">
+                    <img src="{{ p['imagem_url'] if p['imagem_url'] else url_for('serve_produto_imagem', produto_id=p['id']) }}" alt="{{ p['nome'] }}">
                     <div class="product-overlay">
                         <a href="{{ url_for('produto', id=p['id']) }}" class="overlay-btn"><i
                                 class="fas fa-eye"></i></a>
@@ -292,11 +262,15 @@
     function mudarImagem() {
         const select = document.getElementById("cor-select");
         if (!select) return;
-
+        
         let cor = select.value.replaceAll(" ", "_");
-        let nome = "{{ produto.nome }}";
+        let nomeRaw = "{{ produto.nome }}";
+        
+        // Capitalize Name explicitly in Javascript to match the API expectation (e.g. 'Gerbera', 'Rosa')
+        let nome = nomeRaw.charAt(0).toUpperCase() + nomeRaw.slice(1).toLowerCase();
+        
         let mainImg = document.getElementById("imagem-produto");
-
+        
         // Se temos um URL externo, não tentamos carregar ficheiro local de cores
         // a menos que queiramos implementar um mapeamento complexo.
         // Por agora, evitamos que a imagem desapareça ao trocar de cor.
@@ -305,14 +279,14 @@
             return;
         }
 
-        let novaSrc = "/produto/imagem_cor/" + nome.toLowerCase() + "/" + cor;
-
+        let novaSrc = "/produto/imagem_cor/" + nome + "/" + cor;
+        
         // Verificar se a imagem existe antes de trocar para evitar o ícone de erro
         let tempImg = new Image();
-        tempImg.onload = function () {
+        tempImg.onload = function() {
             mainImg.src = novaSrc;
         };
-        tempImg.onerror = function () {
+        tempImg.onerror = function() {
             console.warn("Imagem de cor não encontrada no servidor: " + novaSrc);
             // Mantém a imagem atual ou volta para a imagem padrão do produto
             mainImg.src = "{{ url_for('serve_produto_imagem', produto_id=produto.id) }}";
