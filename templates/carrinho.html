@@ -21,7 +21,7 @@
                 {% for item in carrinho %}
                 <div class="carrinho-item">
 
-                    <img src="{{ url_for('serve_produto_imagem', produto_id=item['id']) }}" alt="{{ item['nome'] }}">
+                    <img src="{{ item['imagem_url'] if item['imagem_url'] else url_for('serve_produto_imagem', produto_id=item['id']) }}" alt="{{ item['nome'] }}">
 
                     <div class="carrinho-info">
                         <h4>{{ item['nome'] }}</h4>

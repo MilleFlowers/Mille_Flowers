@@ -60,7 +60,8 @@ def init_db():
             imagem_blob BLOB,
             imagem_mimetype TEXT,
             esgotado INTEGER DEFAULT 0,
-            cores_esgotadas TEXT DEFAULT ''
+            cores_esgotadas TEXT DEFAULT '',
+            imagem_url TEXT
         )
     """)
     conn.execute("""
@@ -142,6 +143,10 @@ def init_db():
         conn.execute("ALTER TABLE produtos ADD COLUMN imagem_mimetype TEXT")
     except Exception:
         pass
+    try:
+        conn.execute("ALTER TABLE produtos ADD COLUMN imagem_url TEXT")
+    except Exception:
+        pass
 
     conn.execute("""
         CREATE TABLE IF NOT EXISTS compras (
@@ -180,8 +185,8 @@ def init_db():
                 print(f"WARNING: Imagem {img_path} não encontrada durante init_db")
             
             conn.execute(
-                "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype) VALUES (?, ?, ?, ?, ?, ?)",
-                (nome, cor, preco, img_name, blob, mimetype)
+                "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (nome, cor, preco, img_name, blob, mimetype, None)
             )
         
     # Migração automática: Se houver imagem no disco mas não no banco (BLOB), sincronizar.
@@ -231,8 +236,11 @@ def index():
 @app.route("/produto/imagem/<int:produto_id>")
 def serve_produto_imagem(produto_id):
     conn = get_db()
-    produto = conn.execute("SELECT imagem_blob, imagem_mimetype, imagem FROM produtos WHERE id = ?", (produto_id,)).fetchone()
+    produto = conn.execute("SELECT imagem_blob, imagem_mimetype, imagem, imagem_url FROM produtos WHERE id = ?", (produto_id,)).fetchone()
     conn.close()
+
+    if produto and produto["imagem_url"]:
+        return redirect(produto["imagem_url"])
 
     if produto and produto["imagem_blob"]:
         from flask import Response
@@ -359,6 +367,7 @@ def adicionar_carrinho():
         "preco": produto["preco"],
         "quantidade": quantidade,
         "imagem": produto["imagem"],
+        "imagem_url": produto["imagem_url"],
         "cor": cor
     })
     session.modified = True
@@ -696,9 +705,11 @@ def adicionar_produto():
     nome = request.form.get("nome")
     cor = request.form.get("cor")
     preco = request.form.get("preco")
+    imagem_url = request.form.get("imagem_url")
 
     imagem_blob = None
     imagem_mimetype = None
+    imagem = ""
     file = request.files.get("imagem_upload")
     
     if file and file.filename != "":
@@ -714,12 +725,12 @@ def adicionar_produto():
         file_path = os.path.join(upload_folder, filename)
         file.save(file_path)
         imagem = filename
-    else:
-        flash("A imagem do produto é obrigatória.")
+    elif not imagem_url:
+        flash("A imagem do produto (upload ou URL) é obrigatória.")
         return redirect(url_for("admin"))
 
     if not (nome and cor and preco):
-        flash("Todos os campos são obrigatórios.")
+        flash("Todos os campos base são obrigatórios.")
         return redirect(url_for("admin"))
 
     try:
@@ -730,8 +741,8 @@ def adicionar_produto():
 
     conn = get_db()
     conn.execute(
-        "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype) VALUES (?, ?, ?, ?, ?, ?)",
-        (nome, cor, preco, imagem, imagem_blob, imagem_mimetype)
+        "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url)
     )
     conn.commit()
     conn.close()

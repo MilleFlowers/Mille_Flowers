@@ -46,10 +46,15 @@
                                     class="form-control">
                             </div>
                             <div class="form-group">
-                                <label>Imagem do Produto (PC)</label>
+                                <label>Imagem do Produto (Upload PC)</label>
                                 <input type="file" name="imagem_upload" accept="image/png, image/jpeg, image/webp"
-                                    required class="form-control" style="padding: 10px;">
+                                    class="form-control" style="padding: 10px;">
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Link da Imagem (URL Externo - Recomendado para Render)</label>
+                            <input type="url" name="imagem_url" placeholder="https://exemplo.com/imagem.jpg"
+                                class="form-control">
                         </div>
                         <button type="submit" class="btn btn-block" style="margin-top: 15px;">Adicionar Produto</button>
                     </form>
