@@ -65,6 +65,16 @@ def init_db():
         )
     """)
     conn.execute("""
+        CREATE TABLE IF NOT EXISTS produto_imagens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_produto TEXT NOT NULL,
+            cor TEXT NOT NULL,
+            imagem_blob BLOB NOT NULL,
+            imagem_mimetype TEXT NOT NULL,
+            UNIQUE(nome_produto, cor)
+        )
+    """)
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS cores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL UNIQUE
@@ -251,6 +261,22 @@ def serve_produto_imagem(produto_id):
     if produto and produto["imagem"]:
         return redirect(url_for('static', filename='img/' + produto["imagem"]))
     
+    return "Imagem não encontrada", 404
+
+@app.route("/produto/imagem_cor/<nome>/<cor>")
+def serve_produto_imagem_cor(nome, cor):
+    conn = get_db()
+    # Normalize nome/cor parameters (e.g. from 'gerbera' to 'Gerbera', replacing underscores)
+    nome = nome.capitalize()
+    cor = cor.replace(' ', '_')
+    
+    imagem = conn.execute("SELECT imagem_blob, imagem_mimetype FROM produto_imagens WHERE nome_produto = ? AND cor = ?", (nome, cor)).fetchone()
+    conn.close()
+
+    if imagem and imagem["imagem_blob"]:
+        from flask import Response
+        return Response(imagem["imagem_blob"], mimetype=imagem["imagem_mimetype"] or "image/jpeg")
+
     return "Imagem não encontrada", 404
 
 @app.route("/produto/<int:id>")
@@ -718,13 +744,6 @@ def adicionar_produto():
         # Ler conteúdo para o banco de dados
         imagem_blob = file.read()
         imagem_mimetype = file.content_type
-        
-        # Opcional: Salvar em disco também como cache/fallback
-        file.seek(0)
-        upload_folder = os.path.join(app.root_path, 'static', 'img')
-        os.makedirs(upload_folder, exist_ok=True)
-        file_path = os.path.join(upload_folder, filename)
-        file.save(file_path)
         imagem = filename
     elif not imagem_url:
         flash("A imagem do produto (upload ou URL) é obrigatória.")
@@ -850,7 +869,7 @@ def editar_produto(produto_id):
         imagem_url = request.form.get("imagem_url")
         imagem = request.form.get("imagem_text")
         
-        # O campo `force_replace` indica que o usuário já confirmou que quer substituir
+        # O campo `force_replace` já não é relevante
         force_replace = request.form.get("force_replace", "false")
 
         # Verifica se um arquivo foi enviado (imagem_upload)
@@ -860,53 +879,9 @@ def editar_produto(produto_id):
 
         if file and file.filename != "":
             filename = secure_filename(file.filename)
-            upload_folder = os.path.join(app.root_path, 'static', 'img')
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = os.path.join(upload_folder, filename)
-            
-            # Se o ficheiro já existe e o utilizador ainda não confirmou substituição
-            if os.path.exists(file_path) and force_replace != "true":
-                # Salvar temporariamente caso ele queira confirmar e fechar
-                # Guarda temporariamente
-                temp_folder = os.path.join(app.root_path, 'static', 'tmp')
-                os.makedirs(temp_folder, exist_ok=True)
-                temp_path = os.path.join(temp_folder, filename)
-                file.save(temp_path)
-                
-                # Redireciona para página de confirmação
-                session['upload_pendente'] = {
-                    'produto_id': produto_id,
-                    'nome': nome,
-                    'cor': cor,
-                    'preco': preco,
-                    'filename': filename,
-                    'mimetype': file.content_type
-                }
-                return redirect(url_for('confirmar_substituicao'))
-                
-            else:
-                # O utilizador forçou a substituição ou o ficheiro não existia
-                imagem_blob = file.read()
-                imagem_mimetype = file.content_type
-                file.seek(0)
-                file.save(file_path)
-                imagem = filename
-
-        # Se viemos de uma confirmação forçada (sem ficheiro no request, mas com forçar substituição)
-        if force_replace == "true" and not file:
-            filename = request.form.get("imagem_text")
-            temp_path = os.path.join(app.root_path, 'static', 'tmp', filename)
-            file_path = os.path.join(app.root_path, 'static', 'img', filename)
-            
-            if os.path.exists(temp_path):
-                with open(temp_path, "rb") as f:
-                    imagem_blob = f.read()
-                imagem_mimetype = mimetypes.guess_type(filename)[0]
-                # Move do tmp para o img
-                os.replace(temp_path, file_path)
-                imagem = filename
-
-        if not (nome and cor and preco and imagem):
+            imagem_blob = file.read()
+            imagem_mimetype = file.content_type
+            imagem = filename
             flash("Todos os campos são obrigatórios.")
             return redirect(url_for("editar_produto", produto_id=produto_id))
 
@@ -971,58 +946,8 @@ def editar_produto(produto_id):
 
 @app.route("/admin/confirmar_substituicao", methods=["GET", "POST"])
 def confirmar_substituicao():
-    if not is_admin():
-        flash("Acesso restrito ao administrador.")
-        return redirect(url_for("index"))
-
-    # Verifica se há dados na sessão
-    dados_pendentes = session.get('upload_pendente')
-    if not dados_pendentes:
-        flash("Nenhuma substituição pendente encontrada.")
-        return redirect(url_for("admin"))
-
-    if request.method == "POST":
-        acao = request.form.get("acao")
-        produto_id = dados_pendentes['produto_id']
-        
-        if acao == "cancelar":
-            # Apagar a foto do temp e voltar atrás
-            temp_path = os.path.join(app.root_path, 'static', 'tmp', dados_pendentes['filename'])
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            session.pop('upload_pendente', None)
-            flash("Ação cancelada. A imagem não foi substituída.")
-            return redirect(url_for("editar_produto", produto_id=produto_id))
-            
-        elif acao == "substituir":
-            nome = dados_pendentes['nome']
-            cor = dados_pendentes['cor']
-            preco = dados_pendentes['preco']
-            filename = dados_pendentes['filename']
-            mimetype = dados_pendentes.get('mimetype') or mimetypes.guess_type(filename)[0]
-            
-            # Move out of temp and read blob
-            temp_path = os.path.join(app.root_path, 'static', 'tmp', filename)
-            file_path = os.path.join(app.root_path, 'static', 'img', filename)
-            imagem_blob = None
-            if os.path.exists(temp_path):
-                with open(temp_path, "rb") as f:
-                    imagem_blob = f.read()
-                os.replace(temp_path, file_path)
-            
-            conn = get_db()
-            conn.execute(
-                "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem = ?, imagem_blob = ?, imagem_mimetype = ? WHERE id = ?",
-                (nome, cor, preco, filename, imagem_blob, mimetype, produto_id)
-            )
-            conn.commit()
-            conn.close()
-            
-            session.pop('upload_pendente', None)
-            flash("Imagem substituída e produto atualizado com sucesso!")
-            return redirect(url_for("admin"))
-
-    return render_template("confirmar_substituicao.html", dados=dados_pendentes)
+    # Rota obsoleta - apenas redireciona para admin
+    return redirect(url_for("admin"))
 
 @app.route("/admin/gerir_cores/<int:produto_id>", methods=["GET", "POST"])
 def gerir_cores(produto_id):
