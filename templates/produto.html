@@ -262,9 +262,32 @@
     function mudarImagem() {
         const select = document.getElementById("cor-select");
         if (!select) return;
+        
         let cor = select.value.replaceAll(" ", "_");
         let nome = "{{ produto.nome }}";
-        document.getElementById("imagem-produto").src = "/static/img/" + nome + "_" + cor + ".jpeg";
+        let mainImg = document.getElementById("imagem-produto");
+        
+        // Se temos um URL externo, não tentamos carregar ficheiro local de cores
+        // a menos que queiramos implementar um mapeamento complexo.
+        // Por agora, evitamos que a imagem desapareça ao trocar de cor.
+        if ("{{ produto.imagem_url or '' }}" !== "") {
+            console.log("Mantendo imagem principal (URL externo) para a cor selecionada.");
+            return;
+        }
+
+        let novaSrc = "/static/img/" + nome + "_" + cor + ".jpeg";
+        
+        // Verificar se a imagem existe antes de trocar para evitar o ícone de erro
+        let tempImg = new Image();
+        tempImg.onload = function() {
+            mainImg.src = novaSrc;
+        };
+        tempImg.onerror = function() {
+            console.warn("Imagem de cor não encontrada no servidor: " + novaSrc);
+            // Mantém a imagem atual ou volta para a imagem padrão do produto
+            mainImg.src = "{{ url_for('serve_produto_imagem', produto_id=produto.id) }}";
+        };
+        tempImg.src = novaSrc;
     }
 
     // Correr na inicialização para preparar se a primeira cor da dropdown estiver esgotada

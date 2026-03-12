@@ -58,8 +58,15 @@
                             <label for="imagem_upload">Modificar Imagem (Upload de ficheiro do PC):</label>
                             <input type="file" id="imagem_upload" name="imagem_upload"
                                 accept="image/png, image/jpeg, image/webp" class="form-control">
-                            <small style="color: var(--color-text-lt); font-size: 0.8rem; margin-top: 5px;">Se não
-                                escolher nenhuma imagem nova, a imagem atual será mantida.</small>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="imagem_url">Link da Imagem (URL Externo):</label>
+                            <input type="url" id="imagem_url" name="imagem_url" value="{{ produto.imagem_url or '' }}"
+                                placeholder="https://exemplo.com/imagem.jpg" class="form-control">
+                            <small style="color: var(--color-text-lt); font-size: 0.8rem; margin-top: 5px;">Se preenchido, este link será usado em vez das fotos locais.</small>
                         </div>
                     </div>
 

@@ -145,6 +145,7 @@ def init_db():
         pass
     try:
         conn.execute("ALTER TABLE produtos ADD COLUMN imagem_url TEXT")
+        conn.commit()
     except Exception:
         pass
 
@@ -846,6 +847,7 @@ def editar_produto(produto_id):
         nome = request.form.get("nome")
         cor = request.form.get("cor")
         preco = request.form.get("preco")
+        imagem_url = request.form.get("imagem_url")
         imagem = request.form.get("imagem_text")
         
         # O campo `force_replace` indica que o usuário já confirmou que quer substituir
@@ -916,13 +918,13 @@ def editar_produto(produto_id):
 
         if imagem_blob:
             conn.execute(
-                "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem = ?, imagem_blob = ?, imagem_mimetype = ? WHERE id = ?",
-                (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, produto_id)
+                "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem = ?, imagem_blob = ?, imagem_mimetype = ?, imagem_url = ? WHERE id = ?",
+                (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url, produto_id)
             )
         else:
             conn.execute(
-                "UPDATE produtos SET nome = ?, cor = ?, preco = ? WHERE id = ?",
-                (nome, cor, preco, produto_id)
+                "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem_url = ? WHERE id = ?",
+                (nome, cor, preco, imagem_url, produto_id)
             )
         conn.commit()
         conn.close()
