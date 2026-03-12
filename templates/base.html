@@ -31,7 +31,6 @@
 
     <!-- Header -->
     <header id="mainHeader">
-        <div class="menu-overlay" id="menuOverlay"></div>
         <div class="container header-inner">
 
             <!-- Logo -->
@@ -45,18 +44,17 @@
 
             <!-- Navigation -->
             <nav class="main-nav" id="mainNav">
+                <div class="mobile-nav-header">
+                    <div class="mobile-nav-logo">Mille Flowers</div>
+                    <button class="close-mobile-menu" id="closeMobileMenu"><i class="fas fa-times"></i></button>
+                </div>
                 <ul>
-                    <li><a href="{{ url_for('index') }}"
-                            class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
+                    <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">
+                            <i class="fa-solid fa-home mobile-only-icon"></i> Home</a></li>
                     <li><a href="{{ url_for('index') }}#colecao"
-                            class="{% if request.endpoint == 'index' and '#colecao' in request.url %}active{% endif %}">Loja</a>
+                            class="{% if request.endpoint == 'index' and '#colecao' in request.url %}active{% endif %}">
+                            <i class="fa-solid fa-store mobile-only-icon"></i> Loja</a>
                     </li>
-                    {% if session.usuario_nome %}
-                    <li><a href="{{ url_for('pagamento') }}"
-                            class="{% if request.endpoint == 'pagamento' %}active{% endif %}">Checkout</a></li>
-                    {% endif %}
-                    <li><a href="{{ url_for('carrinho') }}"
-                            class="{% if request.endpoint == 'carrinho' %}active{% endif %}">Carrinho</a></li>
                 </ul>
             </nav>
 
@@ -70,31 +68,33 @@
             <!-- Icons: User + Cart + Mobile btn -->
             <div class="header-icons">
                 {% if session.usuario_nome %}
-                <span style="color:rgba(240,208,112,0.8); font-size:0.8rem; font-weight:600;">
-                    <i class="fas fa-user"></i> {{ session.usuario_nome }}
+                <span style="color:rgba(240,208,112,0.8); font-size:0.85rem; font-weight:600; display: flex; align-items: center; gap: 8px;">
+                    {{ session.usuario_nome }} <i class="fa-solid fa-user"></i>
                 </span>
                 <a href="/logout" class="nav-btn">Sair</a>
                 {% else %}
                 <a href="{{ url_for('login') }}" class="icon-btn" title="Entrar">
-                    <i class="fas fa-user"></i>
+                    <i class="fa-solid fa-user"></i>
                 </a>
                 {% endif %}
 
                 <a href="{{ url_for('carrinho') }}" class="icon-btn cart-icon js-cart-toggle" title="Carrinho">
-                    <i class="fas fa-shopping-bag"></i>
+                    <i class="fa-solid fa-bag-shopping"></i>
                     <span class="cart-count">{{ cart_count }}</span>
                 </a>
 
                 <!-- Admin Dropdown -->
+                {% if session.email == "filipenetocunha@gmail.com" %}
                 <div class="admin-dropdown">
                     <button class="icon-btn admin-dropdown-btn" title="Menu Admin" id="adminDropdownBtn">
-                        <i class="fas fa-bars"></i>
+                        <i class="fa-solid fa-bars"></i>
                     </button>
                     <div class="admin-dropdown-content" id="adminDropdownContent">
                         <a href="{{ url_for('admin') }}" class="btn btn-outline btn-block"
                             style="padding: 8px 12px;">Admin</a>
                     </div>
                 </div>
+                {% endif %}
 
                 <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
                     <i class="fas fa-bars"></i>
@@ -304,27 +304,26 @@
         /* ── Mobile Menu ── */
         const mobileBtn = document.getElementById('mobileMenuBtn');
         const mainNav = document.getElementById('mainNav');
-        const menuOverlay = document.getElementById('menuOverlay');
-        
-        function toggleMenu() {
-            mainNav.classList.toggle('active');
-            menuOverlay.classList.toggle('active');
-            const icon = mobileBtn.querySelector('i');
-            icon.className = mainNav.classList.contains('active') ? 'fas fa-times' : 'fas fa-bars';
-            document.body.style.overflow = mainNav.classList.contains('active') ? 'hidden' : '';
-        }
+        const closeMobileBtn = document.getElementById('closeMobileMenu');
 
         if (mobileBtn && mainNav) {
-            mobileBtn.addEventListener('click', toggleMenu);
-            menuOverlay?.addEventListener('click', toggleMenu);
-            
-            // Close menu when clicking a link
-            mainNav.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', () => {
-                    if (mainNav.classList.contains('active')) toggleMenu();
-                });
+            mobileBtn.addEventListener('click', () => {
+                mainNav.classList.add('active');
             });
         }
+
+        if (closeMobileBtn && mainNav) {
+            closeMobileBtn.addEventListener('click', () => {
+                mainNav.classList.remove('active');
+            });
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (mainNav.classList.contains('active') && !mainNav.contains(e.target) && !mobileBtn.contains(e.target)) {
+                mainNav.classList.remove('active');
+            }
+        });
 
         /* ── Admin Dropdown ── */
         const adminDropdownBtn = document.getElementById('adminDropdownBtn');

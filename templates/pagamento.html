@@ -91,8 +91,8 @@
             </label>
           </div>
 
-          <!-- MBWay -->
-          <div id="mbwayFields">
+          <!-- Card Fields -->
+          <div id="cardFields" style="display:none;">
             <div class="credit-card-preview" id="cardPreview">
               <div class="card-chip"></div>
               <div class="card-num-display" id="cardNumDisplay">•••• •••• •••• ••••</div>
@@ -133,13 +133,16 @@
           </div>
 
           <!-- MBWay -->
-          <div id="mbwayFields" style="display:none;">
-            <div
-              style="background:var(--color-rosa-lt); border-radius:12px; padding:20px; border:1px solid var(--color-border); text-align:center;">
-              <i class="fas fa-mobile-alt" style="font-size:2rem; color:var(--color-vinho); margin-bottom:12px;"></i>
-              <p style="font-weight:700; color:var(--color-vinho); margin-bottom:8px;">Pagamento Seguro</p>
-              <p style="font-size:0.9rem; color:var(--color-text);">No próximo passo receberá as instruções para o envio
-                rápido na App MB Way através do seu telemóvel.</p>
+          <div id="mbwayFields" style="display:block;">
+            <div class="mb-way-card">
+              <div class="mb-way-logo">
+                <i class="fas fa-mobile-alt"></i>
+                <span>MB WAY</span>
+              </div>
+              <div class="mb-way-info">
+                <p><strong>Número:</strong> <span id="displayTelemovel">9XXXXXXXX</span></p>
+                <p class="mb-way-hint">Receberá uma notificação na sua app MB WAY para confirmar o pagamento de <strong>€ {{ "%.2f"|format(total if total >= 30 else total + 3.99) }}</strong>.</p>
+              </div>
             </div>
           </div>
 
@@ -263,9 +266,17 @@
   /* Payment fields toggle */
   function showPaymentFields() {
     const metodo = document.querySelector('input[name="metodo"]:checked')?.value;
-    document.getElementById('cardFields').style.display = metodo === 'cartao' ? '' : 'none';
-    document.getElementById('mbwayFields').style.display = metodo === 'mbway' ? '' : 'none';
-    document.getElementById('mbFields').style.display = metodo === 'mb' ? '' : 'none';
+    const cardFields = document.getElementById('cardFields');
+    const mbwayFields = document.getElementById('mbwayFields');
+    const mbFields = document.getElementById('mbFields');
+    
+    if (cardFields) cardFields.style.display = metodo === 'cartao' ? 'block' : 'none';
+    if (mbwayFields) mbwayFields.style.display = metodo === 'mbway' ? 'block' : 'none';
+    if (mbFields) mbFields.style.display = metodo === 'mb' ? 'block' : 'none';
+    
+    if (metodo === 'mbway') {
+        document.getElementById('displayTelemovel').textContent = document.getElementById('telemovel').value || '9XXXXXXXX';
+    }
   }
 
   /* Card number format */

@@ -123,23 +123,23 @@
                     <tbody>
                         {% for produto in produtos %}
                         <tr>
-                            <td>#{{ produto.id }}</td>
-                            <td><strong>{{ produto.nome }}</strong></td>
-                            <td style="color: #c0392b; font-size: 0.9em;">
+                            <td data-label="ID">#{{ produto.id }}</td>
+                            <td data-label="Flor"><strong>{{ produto.nome }}</strong></td>
+                            <td data-label="Cores Esgotadas" style="color: #c0392b; font-size: 0.9em;">
                                 {% if produto.cores_esgotadas %}
                                 {{ produto.cores_esgotadas | replace(',', ', ') | title }}
                                 {% else %}
                                 <span style="color: #27ae60;">Nenhuma</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-label="Estado">
                                 {% if produto.esgotado == 1 %}
                                 <span class="status-badge status-soldout">Esgotado</span>
                                 {% else %}
                                 <span class="status-badge status-available">Disponível</span>
                                 {% endif %}
                             </td>
-                            <td class="admin-actions text-center">
+                            <td data-label="Ações" class="admin-actions text-center">
                                 {% if produto.esgotado != 1 %}
                                 <a href="{{ url_for('esgotar_produto', produto_id=produto.id) }}"
                                     class="action-btn action-warn" title="Esgotar"><i class="fas fa-ban"></i></a>
@@ -194,17 +194,17 @@
                     <tbody>
                         {% for pedido in pedidos %}
                         <tr>
-                            <td>#{{ pedido.id }}</td>
-                            <td>
+                            <td data-label="ID">#{{ pedido.id }}</td>
+                            <td data-label="Cliente">
                                 <strong>{{ pedido.nome_cliente or '—' }}</strong>
                                 {% if pedido.email %}
                                 <br><small style="color: var(--color-text-lt);">{{ pedido.email }}</small>
                                 {% endif %}
                             </td>
-                            <td style="max-width: 200px; font-size: 0.85rem;">{{ pedido.produtos or '—' }}</td>
-                            <td style="font-size: 0.85rem;">{{ pedido.morada or '—' }}</td>
-                            <td>{{ pedido.telefone or '—' }}</td>
-                            <td>
+                            <td data-label="Produtos" style="max-width: 200px; font-size: 0.85rem;">{{ pedido.produtos or '—' }}</td>
+                            <td data-label="Morada" style="font-size: 0.85rem;">{{ pedido.morada or '—' }}</td>
+                            <td data-label="Telefone">{{ pedido.telefone or '—' }}</td>
+                            <td data-label="Método">
                                 {% if pedido.metodo_pagamento == 'MB Way' %}
                                 <span
                                     style="background: #6c5ce7; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;">MB
@@ -219,11 +219,11 @@
                                 <span style="color: var(--color-text-lt);">{{ pedido.metodo_pagamento or '—' }}</span>
                                 {% endif %}
                             </td>
-                            <td style="font-weight: 700; color: var(--color-vinho);">
+                            <td data-label="Total" style="font-weight: 700; color: var(--color-vinho);">
                                 {% if pedido.valor_total %}€ {{ "%.2f"|format(pedido.valor_total) }}{% else %}—{% endif
                                 %}
                             </td>
-                            <td>
+                            <td data-label="Estado">
                                 {% if pedido.status == 'pago' %}
                                 <span class="status-badge status-available" style="background: #00b894; color: #fff;">✓
                                     Pago</span>
@@ -239,8 +239,8 @@
                                     Pendente</span>
                                 {% endif %}
                             </td>
-                            <td style="font-size: 0.85rem;">{{ pedido.data or '—' }}</td>
-                            <td class="admin-actions text-center" style="white-space: nowrap;">
+                            <td data-label="Data" style="font-size: 0.85rem;">{{ pedido.data or '—' }}</td>
+                            <td data-label="Ações" class="admin-actions text-center" style="white-space: nowrap;">
                                 {% if pedido.status == 'pendente' %}
                                 <a href="{{ url_for('marcar_pago', pedido_id=pedido.id) }}"
                                     class="action-btn action-info" style="background: #00b894;" title="Marcar como Pago"

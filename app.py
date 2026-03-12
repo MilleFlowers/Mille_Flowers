@@ -34,14 +34,10 @@ def inject_globals():
         now=datetime.now()
     )
 
-# Configuração da Base de Dados (Configurável via variável de ambiente para o Render)
-DATABASE = os.environ.get('DATABASE_URL', 'database.db')
-if DATABASE.startswith("sqlite:///"):
-    DATABASE = DATABASE.replace("sqlite:///", "")
-DATABASE = os.environ.get('DATABASE_PATH', DATABASE)
+# ---------------- Database helper ----------------
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect("database.db")
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -171,10 +167,37 @@ def init_db():
             ("Chaveiro", "normal", 2.00, "chaveiro.jpeg"),
             ("Imã", "normal", 3.00, "ima.jpeg")
         ]
-        conn.executemany(
-            "INSERT INTO produtos (nome, cor, preco, imagem) VALUES (?, ?, ?, ?)",
-            produtos
-        )
+        for nome, cor, preco, img_name in produtos:
+            img_path = os.path.join(app.static_folder, "img", img_name)
+            blob = None
+            mimetype = None
+            if os.path.exists(img_path):
+                print(f"DEBUG: Carregando BLOB para {img_name}")
+                with open(img_path, "rb") as f:
+                    blob = f.read()
+                mimetype = mimetypes.guess_type(img_path)[0]
+            else:
+                print(f"WARNING: Imagem {img_path} não encontrada durante init_db")
+            
+            conn.execute(
+                "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype) VALUES (?, ?, ?, ?, ?, ?)",
+                (nome, cor, preco, img_name, blob, mimetype)
+            )
+        
+    # Migração automática: Se houver imagem no disco mas não no banco (BLOB), sincronizar.
+    produtos_sem_blob = conn.execute("SELECT id, imagem FROM produtos WHERE imagem_blob IS NULL AND imagem IS NOT NULL").fetchall()
+    if produtos_sem_blob:
+        print(f"Sincronizando {len(produtos_sem_blob)} imagens para BLOB...")
+        for p in produtos_sem_blob:
+            img_path = os.path.join(app.static_folder, "img", p["imagem"])
+            if os.path.exists(img_path):
+                with open(img_path, "rb") as f:
+                    blob = f.read()
+                mimetype = mimetypes.guess_type(img_path)[0]
+                conn.execute(
+                    "UPDATE produtos SET imagem_blob = ?, imagem_mimetype = ? WHERE id = ?",
+                    (blob, mimetype, p["id"])
+                )
         
     cores_count = conn.execute("SELECT COUNT(*) FROM cores").fetchone()[0]
     if cores_count == 0:
