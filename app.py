@@ -16,7 +16,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "mille_secret_key")
 stripe.api_key = os.environ.get("STRIPE_API_KEY", "SUA_CHAVE_SECRETA_AQUI")
 
 # Email do administrador
-ADMIN_EMAIL = "filipenetocunha@gmail.com"
+ADMIN_EMAIL = "camillealmeida2019@gmail.com"
 
 # ---------------- Context processor ----------------
 
@@ -1069,4 +1069,5 @@ def gerir_cores(produto_id):
 init_db()
 
 if __name__ == "__main__":
+
     app.run(debug=True)
