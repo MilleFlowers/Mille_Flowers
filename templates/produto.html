@@ -275,7 +275,7 @@
             return;
         }
 
-        let novaSrc = "/static/img/" + nome + "_" + cor + ".jpeg";
+        let novaSrc = "/produto/imagem_cor/" + nome.toLowerCase() + "/" + cor;
         
         // Verificar se a imagem existe antes de trocar para evitar o ícone de erro
         let tempImg = new Image();
