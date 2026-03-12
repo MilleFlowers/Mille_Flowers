@@ -2979,6 +2979,13 @@ select.form-control {
 }
 
 @media (max-width: 768px) {
+    /* Prevent backdrop-filter from breaking fixed child (.main-nav) containing block */
+    header, 
+    .topbar {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
     .container {
         padding: 0 16px;
     }
@@ -3003,7 +3010,7 @@ select.form-control {
         display: block;
         padding: 0;
         box-shadow: -20px 0 50px rgba(0,0,0,0.4);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), right 0.4s ease;
+        transition: right 0.4s ease; /* Removed transform to avoid another stacking context bug */
         z-index: 2100;
     }
 
