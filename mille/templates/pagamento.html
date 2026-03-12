@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}Pagamento — Mille Flowers{% endblock %}
+
+{% block content %}
+
+<!-- Checkout Steps -->
+<div class="checkout-steps">
+  <div class="chk-step active" id="stepD">
+    <div class="step-circle">1</div>
+    <span>Dados</span>
+  </div>
+  <div class="chk-step-divider"></div>
+  <div class="chk-step" id="stepP">
+    <div class="step-circle">2</div>
+    <span>Pagamento</span>
+  </div>
+  <div class="chk-step-divider"></div>
+  <div class="chk-step" id="stepC">
+    <div class="step-circle">3</div>
+    <span>Confirmação</span>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    {% if carrinho %}
+    <div class="checkout-layout">
+
+      <!-- Main panels -->
+      <div>
+        <!-- Step 1: Dados -->
+        <div class="checkout-panel active" id="panel1">
+          <p class="checkout-section-title">Dados de Entrega</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nome Completo</label>
+              <input type="text" id="nome" class="input" placeholder="João Silva" required>
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="email" class="input" placeholder="joao@email.com" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Morada</label>
+            <input type="text" id="morada" class="input" placeholder="Rua das Flores, 123" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Código Postal</label>
+              <input type="text" id="cp" class="input" placeholder="1000-001">
+            </div>
+            <div class="form-group">
+              <label>Cidade</label>
+              <input type="text" id="cidade" class="input" placeholder="Lisboa">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Telemóvel (MB Way)</label>
+            <input type="tel" id="telemovel" class="input" placeholder="9XXXXXXXX" maxlength="9">
+          </div>
+          <button class="btn btn-gold" style="margin-top:16px;" onclick="goStep(2)">
+            Continuar <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <!-- Step 2: Pagamento -->
+        <div class="checkout-panel" id="panel2">
+          <p class="checkout-section-title">Método de Pagamento</p>
+
+          <div class="payment-methods">
+            <!-- Opção desativada por agora (requer Stripe)
+            <label class="payment-option">
+              <input type="radio" name="metodo" value="cartao" onchange="showPaymentFields()">
+              <div class="payment-label">
+                <i class="fas fa-credit-card"></i> Cartão
+              </div>
+            </label>
+            -->
+            <label class="payment-option">
+              <input type="radio" name="metodo" value="mbway" checked onchange="showPaymentFields()">
+              <div class="payment-label">
+                <i class="fas fa-mobile-alt"></i> MB Way
+              </div>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="metodo" value="mb" onchange="showPaymentFields()">
+              <div class="payment-label">
+                <i class="fas fa-university"></i> MB / ATM
+              </div>
+            </label>
+          </div>
+
+          <!-- Card Fields -->
+          <div id="cardFields" style="display:none;">
+            <div class="credit-card-preview" id="cardPreview">
+              <div class="card-chip"></div>
+              <div class="card-num-display" id="cardNumDisplay">•••• •••• •••• ••••</div>
+              <div class="card-info-row">
+                <div>
+                  <div class="card-lbl">Titular</div>
+                  <div class="card-holder-txt" id="cardHolderDisplay">NOME TITULAR</div>
+                </div>
+                <div>
+                  <div class="card-lbl">Validade</div>
+                  <div class="card-expiry-txt" id="cardExpiryDisplay">MM/AA</div>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="flex:2">
+                <label>Número do Cartão</label>
+                <input type="text" class="input" id="cardNum" placeholder="1234 5678 9012 3456" maxlength="19"
+                  oninput="formatCardNum(this)">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="flex:2">
+                <label>Nome no Cartão</label>
+                <input type="text" class="input" id="cardHolder" placeholder="JOÃO SILVA"
+                  oninput="document.getElementById('cardHolderDisplay').textContent = this.value.toUpperCase() || 'NOME TITULAR'">
+              </div>
+              <div class="form-group">
+                <label>Validade</label>
+                <input type="text" class="input" id="cardExpiry" placeholder="MM/AA" maxlength="5"
+                  oninput="formatExpiry(this)">
+              </div>
+              <div class="form-group">
+                <label>CVV</label>
+                <input type="password" class="input" placeholder="•••" maxlength="3">
+              </div>
+            </div>
+          </div>
+
+          <!-- MBWay -->
+          <div id="mbwayFields" style="display:block;">
+            <div class="mb-way-card">
+              <div class="mb-way-logo">
+                <i class="fas fa-mobile-alt"></i>
+                <span>MB WAY</span>
+              </div>
+              <div class="mb-way-info">
+                <p><strong>Número:</strong> <span id="displayTelemovel">9XXXXXXXX</span></p>
+                <p class="mb-way-hint">Receberá uma notificação na sua app MB WAY para confirmar o pagamento de <strong>€ {{ "%.2f"|format(total if total >= 30 else total + 3.99) }}</strong>.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- MB/ATM -->
+          <div id="mbFields" style="display:none;">
+            <div
+              style="background:var(--color-rosa-lt); border-radius:12px; padding:24px; border:1px solid var(--color-border);">
+              <p style="font-weight:700; color:var(--color-vinho); margin-bottom:12px;"><i
+                  class="fas fa-university"></i> Referência Multibanco</p>
+              <p>Entidade: <strong>12345</strong></p>
+              <p>Referência: <strong>123 456 789</strong></p>
+              <p>Valor: <strong>€ {{ "%.2f"|format(total) }}</strong></p>
+              <p style="font-size:0.82rem; color:var(--color-text-lt); margin-top:10px; font-style:italic;">Válida por 3
+                dias.</p>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap;">
+            <button class="btn btn-outline" onclick="goStep(1)">
+              <i class="fas fa-arrow-left"></i> Anterior
+            </button>
+            <button class="btn btn-gold" onclick="goStep(3)">
+              Rever Pedido <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Confirmação -->
+        <div class="checkout-panel" id="panel3">
+          <p class="checkout-section-title">Confirmar Pedido</p>
+          <div class="summary-review" id="reviewBlock">
+            <!-- preenchido via JS -->
+          </div>
+          <div style="display:flex; gap:12px; margin-top:22px; flex-wrap:wrap;">
+            <button class="btn btn-outline" onclick="goStep(2)">
+              <i class="fas fa-arrow-left"></i> Anterior
+            </button>
+            <form method="POST" action="{{ url_for('confirmar_pagamento') }}" style="flex:1;" id="finalForm">
+              <input type="hidden" name="metodo_pagamento" id="finalMetodo" value="Cartão">
+              <input type="hidden" name="nome_cliente" id="finalNome" value="">
+              <input type="hidden" name="email_cliente" id="finalEmail" value="">
+              <input type="hidden" name="morada" id="finalMorada" value="">
+              <input type="hidden" name="telemovel_cliente" id="finalTelemovel" value="">
+              <button type="submit" class="btn btn-gold btn-block" onclick="prepareSubmit(event)">
+                <i class="fas fa-check"></i> Confirmar e Pagar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar summary -->
+      <div class="checkout-aside">
+        <h3 style="font-size:1.5rem; color:var(--color-vinho); margin-bottom:18px;">Resumo</h3>
+        {% for item in carrinho %}
+        <div style="display:flex; gap:12px; margin-bottom:14px; align-items:center;">
+          <img src="{{ url_for('serve_produto_imagem', produto_id=item['id']) }}"
+            style="width:56px; height:56px; object-fit:cover; border-radius:8px; border:2px solid var(--color-rosa);">
+          <div style="flex:1;">
+            <p style="font-weight:700; font-size:0.88rem; color:var(--color-vinho);">{{ item['nome'] }}</p>
+            <p style="font-size:0.8rem; color:var(--color-text-lt);">{{ item['cor'] if item['cor'] != 'normal' else ''
+              }} × {{ item['quantidade'] }}</p>
+          </div>
+          <span style="font-weight:700; color:var(--color-gold); font-size:0.92rem;">
+            € {{ "%.2f"|format(item['preco'] * item['quantidade']) }}
+          </span>
+        </div>
+        {% endfor %}
+        <div style="border-top:1px solid var(--color-border); padding-top:14px; margin-top:10px;">
+          <div class="summary-line"><span>Subtotal</span><span>€ {{ "%.2f"|format(total) }}</span></div>
+          <div class="summary-line"><span>Portes</span><span>{{ "Grátis" if total >= 30 else "€ 3,99" }}</span></div>
+          <div class="summary-line summary-total">
+            <span>Total</span>
+            <strong>€ {{ "%.2f"|format(total if total >= 30 else total + 3.99) }}</strong>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    {% else %}
+    <p style="text-align:center; padding:60px; color:var(--color-text-lt);">
+      O seu carrinho está vazio. <a href="{{ url_for('index') }}" style="color:var(--color-vinho); font-weight:700;">Ver
+        Coleção</a>
+    </p>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+  /* Steps */
+  function goStep(n) {
+    for (let i = 1; i <= 3; i++) {
+      document.getElementById('panel' + i)?.classList.remove('active');
+    }
+    document.getElementById('panel' + n)?.classList.add('active');
+    ['D', 'P', 'C'].forEach((s, i) => {
+      document.getElementById('step' + s)?.classList.toggle('active', i + 1 === n);
+    });
+    if (n === 3) buildReview();
+  }
+
+  /* Build review block */
+  function buildReview() {
+    const metodo = document.querySelector('input[name="metodo"]:checked')?.value || 'cartao';
+    const metoLabel = { cartao: 'Cartão de Crédito', mbway: 'MB Way', mb: 'Multibanco / ATM' };
+    document.getElementById('finalMetodo').value = metoLabel[metodo] || 'Cartão';
+    document.getElementById('reviewBlock').innerHTML = `
+        <div class="review-block">
+            <h4><i class="fas fa-user"></i> Dados</h4>
+            <p>${document.getElementById('nome')?.value || '—'}</p>
+            <p>${document.getElementById('email')?.value || '—'}</p>
+            <p>${document.getElementById('morada')?.value || '—'}, ${document.getElementById('cp')?.value || ''} ${document.getElementById('cidade')?.value || ''}</p>
+        </div>
+        <div class="review-block">
+            <h4><i class="fas fa-credit-card"></i> Pagamento</h4>
+            <p>${metoLabel[metodo]}</p>
+        </div>
+    `;
+  }
+
+  /* Payment fields toggle */
+  function showPaymentFields() {
+    const metodo = document.querySelector('input[name="metodo"]:checked')?.value;
+    const cardFields = document.getElementById('cardFields');
+    const mbwayFields = document.getElementById('mbwayFields');
+    const mbFields = document.getElementById('mbFields');
+    
+    if (cardFields) cardFields.style.display = metodo === 'cartao' ? 'block' : 'none';
+    if (mbwayFields) mbwayFields.style.display = metodo === 'mbway' ? 'block' : 'none';
+    if (mbFields) mbFields.style.display = metodo === 'mb' ? 'block' : 'none';
+    
+    if (metodo === 'mbway') {
+        document.getElementById('displayTelemovel').textContent = document.getElementById('telemovel').value || '9XXXXXXXX';
+    }
+  }
+
+  /* Card number format */
+  function formatCardNum(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 16);
+    el.value = v.match(/.{1,4}/g)?.join(' ') || v;
+    const display = v.padEnd(16, '•').match(/.{1,4}/g).join(' ');
+    document.getElementById('cardNumDisplay').textContent = display;
+  }
+  function formatExpiry(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 4);
+    el.value = v.length > 2 ? v.slice(0, 2) + '/' + v.slice(2) : v;
+    document.getElementById('cardExpiryDisplay').textContent = el.value || 'MM/AA';
+  }
+
+  function prepareSubmit(e) {
+    // Preencher os campos hidden com os dados do checkout
+    document.getElementById('finalNome').value = document.getElementById('nome')?.value || '';
+    document.getElementById('finalEmail').value = document.getElementById('email')?.value || '';
+
+    const morada = document.getElementById('morada')?.value || '';
+    const cp = document.getElementById('cp')?.value || '';
+    const cidade = document.getElementById('cidade')?.value || '';
+    document.getElementById('finalMorada').value = [morada, cp, cidade].filter(Boolean).join(', ');
+
+    document.getElementById('finalTelemovel').value = document.getElementById('telemovel')?.value || '';
+  }
+</script>
+{% endblock %}

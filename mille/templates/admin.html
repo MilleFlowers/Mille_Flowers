@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - Mille Flowers{% endblock %}
+
+{% block content %}
+<div class="page-banner" style="min-height: 180px; padding: 30px 0;">
+    <div class="container">
+        <h1>Painel de Administração</h1>
+        <p>Gestão de Produtos e Encomendas</p>
+    </div>
+</div>
+
+<div class="container section">
+    <div class="admin-dashboard">
+
+        <!-- Adicionar Produto e Cor Grid -->
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: start;">
+
+            <!-- Adicionar Produto Card -->
+            <div class="admin-card" style="margin-top: 0;">
+                <div class="admin-card-header">
+                    <h3><i class="fas fa-plus-circle"></i> Adicionar Produto</h3>
+                </div>
+                <div class="admin-card-body">
+                    <form action="{{ url_for('adicionar_produto') }}" method="POST" class="admin-form"
+                        enctype="multipart/form-data">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome da flor</label>
+                                <input type="text" name="nome" placeholder="Ex: Rosa" required class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Cor</label>
+                                <select name="cor" required class="form-control">
+                                    <option value="" disabled selected>-- Selecione uma cor --</option>
+                                    {% for cor in cores %}
+                                    <option value="{{ cor.nome }}">{{ cor.nome | title | replace('_', ' ') }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Preço (€)</label>
+                                <input type="number" name="preco" placeholder="0.00" step="0.01" required
+                                    class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Imagem do Produto (PC)</label>
+                                <input type="file" name="imagem_upload" accept="image/png, image/jpeg, image/webp"
+                                    required class="form-control" style="padding: 10px;">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-block" style="margin-top: 15px;">Adicionar Produto</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Adicionar Nova Cor Card -->
+            <div class="admin-card" style="margin-top: 0;">
+                <div class="admin-card-header">
+                    <h3><i class="fas fa-palette"></i> Adicionar Nova Cor</h3>
+                </div>
+                <div class="admin-card-body">
+                    <form action="{{ url_for('adicionar_cor') }}" method="POST" class="admin-form">
+                        <div class="form-group">
+                            <label>Nome da Cor</label>
+                            <input type="text" name="nova_cor" placeholder="Ex: Azul Marinho" required
+                                class="form-control">
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--color-text-lt); margin-bottom: 33px;">
+                            Adicione uma nova cor à base de dados para que ela fique disponível no momento de adicionar
+                            novos produtos.
+                        </p>
+                        <button type="submit" class="btn btn-block" style="margin-top: 15px;">Guardar Cor</button>
+                    </form>
+
+                    <!-- Lista de Cores Existentes -->
+                    <div style="margin-top: 30px;">
+                        <h4 style="margin-bottom: 10px; font-size: 1rem; color: var(--color-text);">Cores Existentes
+                        </h4>
+                        <div
+                            style="max-height: 200px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px; padding: 10px; background-color: #fafafa;">
+                            <ul style="list-style: none; padding: 0; margin: 0;">
+                                {% for cor in cores %}
+                                <li
+                                    style="display: flex; justify-content: space-between; align-items: center; padding: 8px 5px; border-bottom: 1px solid #eee;">
+                                    <span style="text-transform: capitalize; color: #444;">{{ cor.nome | title }}</span>
+                                    <a href="{{ url_for('remover_cor', cor_id=cor.id) }}"
+                                        style="color: #e74c3c; padding: 5px; background: none; border: none; cursor: pointer; transition: 0.2s;"
+                                        onclick="return confirm('Tem certeza que quer remover a cor {{ cor.nome }}?');"
+                                        title="Remover"><i class="fas fa-trash-alt"></i></a>
+                                </li>
+                                {% endfor %}
+                                {% if not cores %}
+                                <li style="color: #888; font-size: 0.9em; text-align: center; padding: 10px;">Nenhuma
+                                    cor encontrada.</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Produtos Table -->
+        <div class="admin-card" style="margin-top: 40px;">
+            <div class="admin-card-header">
+                <h3><i class="fas fa-boxes"></i> Inventário de Produtos</h3>
+            </div>
+            <div class="admin-card-body table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Flor</th>
+                            <th>Cores Esgotadas</th>
+                            <th>Estado</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for produto in produtos %}
+                        <tr>
+                            <td data-label="ID">#{{ produto.id }}</td>
+                            <td data-label="Flor"><strong>{{ produto.nome }}</strong></td>
+                            <td data-label="Cores Esgotadas" style="color: #c0392b; font-size: 0.9em;">
+                                {% if produto.cores_esgotadas %}
+                                {{ produto.cores_esgotadas | replace(',', ', ') | title }}
+                                {% else %}
+                                <span style="color: #27ae60;">Nenhuma</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Estado">
+                                {% if produto.esgotado == 1 %}
+                                <span class="status-badge status-soldout">Esgotado</span>
+                                {% else %}
+                                <span class="status-badge status-available">Disponível</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Ações" class="admin-actions text-center">
+                                {% if produto.esgotado != 1 %}
+                                <a href="{{ url_for('esgotar_produto', produto_id=produto.id) }}"
+                                    class="action-btn action-warn" title="Esgotar"><i class="fas fa-ban"></i></a>
+                                {% else %}
+                                <a href="{{ url_for('reativar_produto', produto_id=produto.id) }}"
+                                    class="action-btn action-info" style="background:#27ae60;"
+                                    title="Reativar Produto"><i class="fas fa-check-circle"></i></a>
+                                {% endif %}
+                                <a href="{{ url_for('gerir_cores', produto_id=produto.id) }}"
+                                    class="action-btn action-info" title="Gerir Cores"><i
+                                        class="fas fa-palette"></i></a>
+                                <a href="{{ url_for('editar_produto', produto_id=produto.id) }}"
+                                    class="action-btn action-edit" title="Editar"><i class="fas fa-edit"></i></a>
+                                <a href="{{ url_for('remover_produto', produto_id=produto.id) }}"
+                                    class="action-btn action-delete" title="Remover"
+                                    onclick="return confirm('Tem certeza que quer remover este produto?');"><i
+                                        class="fas fa-trash-alt"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not produtos %}
+                        <tr>
+                            <td colspan="5" class="text-center">Nenhum produto cadastrado.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pedidos Table -->
+        <div class="admin-card" style="margin-top: 40px;">
+            <div class="admin-card-header">
+                <h3><i class="fas fa-shopping-cart"></i> Encomendas</h3>
+            </div>
+            <div class="admin-card-body table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Produtos</th>
+                            <th>Morada</th>
+                            <th>Telefone</th>
+                            <th>Método</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Data</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in pedidos %}
+                        <tr>
+                            <td data-label="ID">#{{ pedido.id }}</td>
+                            <td data-label="Cliente">
+                                <strong>{{ pedido.nome_cliente or '—' }}</strong>
+                                {% if pedido.email %}
+                                <br><small style="color: var(--color-text-lt);">{{ pedido.email }}</small>
+                                {% endif %}
+                            </td>
+                            <td data-label="Produtos" style="max-width: 200px; font-size: 0.85rem;">{{ pedido.produtos or '—' }}</td>
+                            <td data-label="Morada" style="font-size: 0.85rem;">{{ pedido.morada or '—' }}</td>
+                            <td data-label="Telefone">{{ pedido.telefone or '—' }}</td>
+                            <td data-label="Método">
+                                {% if pedido.metodo_pagamento == 'MB Way' %}
+                                <span
+                                    style="background: #6c5ce7; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;">MB
+                                    Way</span>
+                                {% elif pedido.metodo_pagamento == 'Cartão' %}
+                                <span
+                                    style="background: #0984e3; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;">Cartão</span>
+                                {% elif pedido.metodo_pagamento == 'MB/ATM' %}
+                                <span
+                                    style="background: #636e72; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;">MB/ATM</span>
+                                {% else %}
+                                <span style="color: var(--color-text-lt);">{{ pedido.metodo_pagamento or '—' }}</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Total" style="font-weight: 700; color: var(--color-vinho);">
+                                {% if pedido.valor_total %}€ {{ "%.2f"|format(pedido.valor_total) }}{% else %}—{% endif
+                                %}
+                            </td>
+                            <td data-label="Estado">
+                                {% if pedido.status == 'pago' %}
+                                <span class="status-badge status-available" style="background: #00b894; color: #fff;">✓
+                                    Pago</span>
+                                {% elif pedido.status == 'enviado' %}
+                                <span class="status-badge"
+                                    style="background: #0984e3; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;">📦
+                                    Enviado</span>
+                                {% elif pedido.status == 'cancelado' %}
+                                <span class="status-badge status-soldout">✗ Cancelado</span>
+                                {% else %}
+                                <span class="status-badge"
+                                    style="background: #fdcb6e; color: #2d3436; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;">⏳
+                                    Pendente</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Data" style="font-size: 0.85rem;">{{ pedido.data or '—' }}</td>
+                            <td data-label="Ações" class="admin-actions text-center" style="white-space: nowrap;">
+                                {% if pedido.status == 'pendente' %}
+                                <a href="{{ url_for('marcar_pago', pedido_id=pedido.id) }}"
+                                    class="action-btn action-info" style="background: #00b894;" title="Marcar como Pago"
+                                    onclick="return confirm('Confirmar que este pedido foi pago?');"><i
+                                        class="fas fa-check"></i></a>
+                                <a href="{{ url_for('cancelar_pedido', pedido_id=pedido.id) }}"
+                                    class="action-btn action-delete" title="Cancelar Pedido"
+                                    onclick="return confirm('Tem certeza que quer cancelar este pedido?');"><i
+                                        class="fas fa-times"></i></a>
+                                {% elif pedido.status == 'pago' %}
+                                <a href="{{ url_for('marcar_enviado', pedido_id=pedido.id) }}"
+                                    class="action-btn action-info" style="background: #0984e3;"
+                                    title="Marcar como Enviado"
+                                    onclick="return confirm('Confirmar envio deste pedido?');"><i
+                                        class="fas fa-truck"></i></a>
+                                <a href="{{ url_for('cancelar_pedido', pedido_id=pedido.id) }}"
+                                    class="action-btn action-delete" title="Cancelar Pedido"
+                                    onclick="return confirm('Tem certeza que quer cancelar este pedido?');"><i
+                                        class="fas fa-times"></i></a>
+                                {% else %}
+                                <span style="color: var(--color-text-lt); font-size: 0.8rem;">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not pedidos %}
+                        <tr>
+                            <td colspan="10" class="text-center" style="padding: 30px;">
+                                <div style="color: var(--color-text-lt); font-style: italic;">
+                                    <i class="fas fa-inbox"
+                                        style="font-size: 2rem; margin-bottom: 15px; display: block; color: var(--color-border);"></i>
+                                    Nenhuma encomenda recebida ainda.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
