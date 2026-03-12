@@ -3006,7 +3006,7 @@ select.form-control {
         width: 300px;
         max-width: 85vw;
         height: 100%;
-        background: #91091e; /* Vibrant Red */
+        background: var(--color-vinho);
         display: block;
         padding: 0;
         box-shadow: -20px 0 50px rgba(0,0,0,0.4);
