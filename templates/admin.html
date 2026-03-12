@@ -9,7 +9,7 @@
     </div>
 </div>
 
-<div class="container section">
+<div class="container section" style="max-width: 1400px; width: 95%;">
     <div class="admin-dashboard">
 
         <!-- Adicionar Produto e Cor Grid -->
@@ -177,106 +177,219 @@
 
         <!-- Pedidos Table -->
         <div class="admin-card" style="margin-top: 40px;">
-            <div class="admin-card-header">
+            <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h3><i class="fas fa-shopping-cart"></i> Encomendas</h3>
             </div>
             <div class="admin-card-body table-responsive">
+                <style>
+                    .admin-table th {
+                        padding: 15px 12px;
+                        background: #f8f9fa;
+                        font-size: 0.85rem;
+                        letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                        color: #555;
+                        border-bottom: 2px solid #eaeaea;
+                    }
+
+                    .admin-table td {
+                        padding: 16px 12px;
+                        vertical-align: middle;
+                        border-bottom: 1px solid #f1f1f1;
+                        font-size: 0.9rem;
+                    }
+
+                    .admin-table tbody tr:hover {
+                        background-color: #fdfdfd;
+                    }
+
+                    .admin-table td.nowrap {
+                        white-space: nowrap;
+                    }
+
+                    .cell-produtos {
+                        max-width: 280px;
+                        font-size: 0.85rem;
+                        line-height: 1.4;
+                        color: #444;
+                    }
+
+                    .cell-morada {
+                        font-size: 0.85rem;
+                        line-height: 1.4;
+                        color: #555;
+                        max-width: 200px;
+                    }
+
+                    .badge-mbway {
+                        background: #e0f2fe;
+                        color: #0284c7;
+                        padding: 4px 10px;
+                        border-radius: 6px;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+
+                    .badge-cartao {
+                        background: #fef08a;
+                        color: #854d0e;
+                        padding: 4px 10px;
+                        border-radius: 6px;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+
+                    .status-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 4px;
+                        padding: 6px 12px;
+                        border-radius: 20px;
+                        font-size: 0.75rem;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    }
+
+                    .status-pago {
+                        background: #dcfce7;
+                        color: #166534;
+                    }
+
+                    .status-enviado {
+                        background: #dbeafe;
+                        color: #1e40af;
+                    }
+
+                    .status-cancelado {
+                        background: #fee2e2;
+                        color: #991b1b;
+                    }
+
+                    .status-pendente {
+                        background: #fef9c3;
+                        color: #854d0e;
+                    }
+
+                    .action-btn {
+                        width: 32px;
+                        height: 32px;
+                        display: inline-flex;
+                        justify-content: center;
+                        align-items: center;
+                        border-radius: 8px;
+                        font-size: 0.9rem;
+                        margin: 0 2px;
+                        transition: all 0.2s;
+                        flex-shrink: 0;
+                    }
+
+                    .action-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    }
+
+                    .action-btn i {
+                        margin: 0;
+                    }
+                </style>
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>Nº</th>
                             <th>Cliente</th>
-                            <th>Produtos</th>
+                            <th>Artigos</th>
                             <th>Morada</th>
-                            <th>Telefone</th>
+                            <th>Telefone / Data</th>
                             <th>Método</th>
                             <th>Total</th>
                             <th>Estado</th>
-                            <th>Data</th>
                             <th class="text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for pedido in pedidos %}
+                        {% for pedido in pedidos|reverse %}
                         <tr>
-                            <td data-label="ID">#{{ pedido.id }}</td>
+                            <td data-label="ID"><strong>#{{ pedido.id }}</strong></td>
                             <td data-label="Cliente">
-                                <strong>{{ pedido.nome_cliente or '—' }}</strong>
+                                <strong>{{ pedido.nome_cliente or '—' }}</strong><br>
                                 {% if pedido.email %}
-                                <br><small style="color: var(--color-text-lt);">{{ pedido.email }}</small>
+                                <a href="mailto:{{ pedido.email }}"
+                                    style="color: var(--color-vinho); font-size: 0.8rem; text-decoration: none; word-break: break-all;">{{
+                                    pedido.email }}</a>
                                 {% endif %}
                             </td>
-                            <td data-label="Produtos" style="max-width: 200px; font-size: 0.85rem;">{{ pedido.produtos or '—' }}</td>
-                            <td data-label="Morada" style="font-size: 0.85rem;">{{ pedido.morada or '—' }}</td>
-                            <td data-label="Telefone">{{ pedido.telefone or '—' }}</td>
+                            <td data-label="Artigos" class="cell-produtos">{{ pedido.produtos or '—' }}</td>
+                            <td data-label="Morada" class="cell-morada">{{ pedido.morada or '—' }}</td>
+                            <td data-label="Telefone" class="nowrap">
+                                {{ pedido.telefone or '—' }}<br>
+                                <small style="color: #888;">{{ pedido.data or '—' }}</small>
+                            </td>
                             <td data-label="Método">
                                 {% if pedido.metodo_pagamento == 'MB Way' %}
-                                <span
-                                    style="background: #6c5ce7; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;">MB
-                                    Way</span>
+                                <span class="badge-mbway"><i class="fas fa-mobile-alt"></i> MB Way</span>
                                 {% elif pedido.metodo_pagamento == 'Cartão' %}
-                                <span
-                                    style="background: #0984e3; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;">Cartão</span>
-                                {% elif pedido.metodo_pagamento == 'MB/ATM' %}
-                                <span
-                                    style="background: #636e72; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;">MB/ATM</span>
+                                <span class="badge-cartao"><i class="far fa-credit-card"></i> Cartão</span>
                                 {% else %}
                                 <span style="color: var(--color-text-lt);">{{ pedido.metodo_pagamento or '—' }}</span>
                                 {% endif %}
                             </td>
-                            <td data-label="Total" style="font-weight: 700; color: var(--color-vinho);">
+                            <td data-label="Total" style="font-weight: 700; font-size: 1rem; color: #222;">
                                 {% if pedido.valor_total %}€ {{ "%.2f"|format(pedido.valor_total) }}{% else %}—{% endif
                                 %}
                             </td>
-                            <td data-label="Estado">
+                            <td data-label="Estado" class="nowrap">
                                 {% if pedido.status == 'pago' %}
-                                <span class="status-badge status-available" style="background: #00b894; color: #fff;">✓
-                                    Pago</span>
+                                <span class="status-badge status-pago"><i class="fas fa-check-circle"></i> Pago</span>
                                 {% elif pedido.status == 'enviado' %}
-                                <span class="status-badge"
-                                    style="background: #0984e3; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;">📦
-                                    Enviado</span>
+                                <span class="status-badge status-enviado"><i class="fas fa-box-open"></i> Enviado</span>
                                 {% elif pedido.status == 'cancelado' %}
-                                <span class="status-badge status-soldout">✗ Cancelado</span>
+                                <span class="status-badge status-cancelado"><i class="fas fa-times-circle"></i>
+                                    Cancelado</span>
                                 {% else %}
-                                <span class="status-badge"
-                                    style="background: #fdcb6e; color: #2d3436; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;">⏳
-                                    Pendente</span>
+                                <span class="status-badge status-pendente"><i class="fas fa-clock"></i> Pendente</span>
                                 {% endif %}
                             </td>
-                            <td data-label="Data" style="font-size: 0.85rem;">{{ pedido.data or '—' }}</td>
-                            <td data-label="Ações" class="admin-actions text-center" style="white-space: nowrap;">
+                            <td data-label="Ações" class="admin-actions text-center nowrap"
+                                style="vertical-align: middle;">
                                 {% if pedido.status == 'pendente' %}
-                                <a href="{{ url_for('marcar_pago', pedido_id=pedido.id) }}"
-                                    class="action-btn action-info" style="background: #00b894;" title="Marcar como Pago"
+                                <a href="{{ url_for('marcar_pago', pedido_id=pedido.id) }}" class="action-btn"
+                                    style="background: #10b981; color: white;" title="Marcar como Pago"
                                     onclick="return confirm('Confirmar que este pedido foi pago?');"><i
                                         class="fas fa-check"></i></a>
-                                <a href="{{ url_for('cancelar_pedido', pedido_id=pedido.id) }}"
-                                    class="action-btn action-delete" title="Cancelar Pedido"
+                                <a href="{{ url_for('cancelar_pedido', pedido_id=pedido.id) }}" class="action-btn"
+                                    style="background: #f59e0b; color: white;" title="Cancelar Pedido"
                                     onclick="return confirm('Tem certeza que quer cancelar este pedido?');"><i
-                                        class="fas fa-times"></i></a>
+                                        class="fas fa-ban"></i></a>
                                 {% elif pedido.status == 'pago' %}
-                                <a href="{{ url_for('marcar_enviado', pedido_id=pedido.id) }}"
-                                    class="action-btn action-info" style="background: #0984e3;"
-                                    title="Marcar como Enviado"
+                                <a href="{{ url_for('marcar_enviado', pedido_id=pedido.id) }}" class="action-btn"
+                                    style="background: #3b82f6; color: white;" title="Marcar como Enviado"
                                     onclick="return confirm('Confirmar envio deste pedido?');"><i
                                         class="fas fa-truck"></i></a>
-                                <a href="{{ url_for('cancelar_pedido', pedido_id=pedido.id) }}"
-                                    class="action-btn action-delete" title="Cancelar Pedido"
+                                <a href="{{ url_for('cancelar_pedido', pedido_id=pedido.id) }}" class="action-btn"
+                                    style="background: #f59e0b; color: white;" title="Cancelar Pedido"
                                     onclick="return confirm('Tem certeza que quer cancelar este pedido?');"><i
-                                        class="fas fa-times"></i></a>
-                                {% else %}
-                                <span style="color: var(--color-text-lt); font-size: 0.8rem;">—</span>
+                                        class="fas fa-ban"></i></a>
                                 {% endif %}
+                                <a href="{{ url_for('remover_pedido', pedido_id=pedido.id) }}"
+                                    class="action-btn action-delete" title="Remover Definitivamente"
+                                    style="background: #ef4444; color: white;"
+                                    onclick="return confirm('Tem CERTEZA que quer eliminar este pedido permanentemente da base de dados? Esta ação não pode ser desfeita.');"><i
+                                        class="fas fa-trash-alt"></i></a>
                             </td>
                         </tr>
                         {% endfor %}
                         {% if not pedidos %}
                         <tr>
-                            <td colspan="10" class="text-center" style="padding: 30px;">
-                                <div style="color: var(--color-text-lt); font-style: italic;">
+                            <td colspan="9" class="text-center" style="padding: 40px 20px;">
+                                <div style="color: #999; font-size: 1.1rem;">
                                     <i class="fas fa-inbox"
-                                        style="font-size: 2rem; margin-bottom: 15px; display: block; color: var(--color-border);"></i>
+                                        style="font-size: 3rem; margin-bottom: 20px; display: block; color: #eee;"></i>
                                     Nenhuma encomenda recebida ainda.
                                 </div>
                             </td>

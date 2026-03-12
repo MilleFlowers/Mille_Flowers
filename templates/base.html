@@ -55,6 +55,18 @@
                             class="{% if request.endpoint == 'index' and '#colecao' in request.url %}active{% endif %}">
                             <i class="fa-solid fa-store mobile-only-icon"></i> Loja</a>
                     </li>
+                    {% if session.email == "filipenetocunha@gmail.com" %}
+                    <li class="mobile-only-admin" style="display: none;">
+                        <a href="{{ url_for('admin') }}"><i class="fa-solid fa-cog mobile-only-icon"></i> Admin</a>
+                    </li>
+                    <style>
+                        @media (max-width: 768px) {
+                            .mobile-only-admin {
+                                display: block !important;
+                            }
+                        }
+                    </style>
+                    {% endif %}
                 </ul>
             </nav>
 
@@ -68,7 +80,8 @@
             <!-- Icons: User + Cart + Mobile btn -->
             <div class="header-icons">
                 {% if session.usuario_nome %}
-                <span style="color:rgba(240,208,112,0.8); font-size:0.85rem; font-weight:600; display: flex; align-items: center; gap: 8px;">
+                <span
+                    style="color:rgba(240,208,112,0.8); font-size:0.85rem; font-weight:600; display: flex; align-items: center; gap: 8px;">
                     {{ session.usuario_nome }} <i class="fa-solid fa-user"></i>
                 </span>
                 <a href="/logout" class="nav-btn">Sair</a>
@@ -83,17 +96,24 @@
                     <span class="cart-count">{{ cart_count }}</span>
                 </a>
 
-                <!-- Admin Dropdown -->
+                <!-- Admin Dropdown (Hidden on mobile) -->
                 {% if session.email == "filipenetocunha@gmail.com" %}
-                <div class="admin-dropdown">
+                <div class="admin-dropdown desktop-only-admin" style="display: none;">
                     <button class="icon-btn admin-dropdown-btn" title="Menu Admin" id="adminDropdownBtn">
-                        <i class="fa-solid fa-bars"></i>
+                        <i class="fa-solid fa-cog"></i> <!-- Mudado para engrenagem em vez do mesmo icone do menu -->
                     </button>
                     <div class="admin-dropdown-content" id="adminDropdownContent">
                         <a href="{{ url_for('admin') }}" class="btn btn-outline btn-block"
                             style="padding: 8px 12px;">Admin</a>
                     </div>
                 </div>
+                <style>
+                    @media (min-width: 769px) {
+                        .desktop-only-admin {
+                            display: block !important;
+                        }
+                    }
+                </style>
                 {% endif %}
 
                 <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
@@ -305,6 +325,7 @@
         const mobileBtn = document.getElementById('mobileMenuBtn');
         const mainNav = document.getElementById('mainNav');
         const closeMobileBtn = document.getElementById('closeMobileMenu');
+        const navLinks = mainNav ? mainNav.querySelectorAll('ul li a') : [];
 
         if (mobileBtn && mainNav) {
             mobileBtn.addEventListener('click', () => {
@@ -318,9 +339,18 @@
             });
         }
 
+        // Fechar ao clicar num link (ex: Loja)
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (mainNav.classList.contains('active')) {
+                    mainNav.classList.remove('active');
+                }
+            });
+        });
+
         // Close menu when clicking outside
         document.addEventListener('click', (e) => {
-            if (mainNav.classList.contains('active') && !mainNav.contains(e.target) && !mobileBtn.contains(e.target)) {
+            if (mainNav && mainNav.classList.contains('active') && !mainNav.contains(e.target) && mobileBtn && !mobileBtn.contains(e.target)) {
                 mainNav.classList.remove('active');
             }
         });

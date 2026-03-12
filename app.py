@@ -359,6 +359,31 @@ def avaliar_produto(id):
     flash("Avaliação submetida com sucesso!", "success")
     return redirect(url_for("produto", id=id))
 
+@app.route("/admin/remover_avaliacao/<int:avaliacao_id>")
+def remover_avaliacao(avaliacao_id):
+    if not is_admin():
+        flash("Acesso restrito ao administrador.", "error")
+        return redirect(url_for("index"))
+
+    conn = get_db()
+    try:
+        # Precisamos do id do produto para redirecionar de volta à página do produto
+        avaliacao = conn.execute("SELECT produto_id FROM avaliacoes WHERE id = ?", (avaliacao_id,)).fetchone()
+        if avaliacao:
+            produto_id = avaliacao["produto_id"]
+            conn.execute("DELETE FROM avaliacoes WHERE id = ?", (avaliacao_id,))
+            conn.commit()
+            flash("Avaliação removida com sucesso.", "success")
+            return redirect(url_for("produto", id=produto_id))
+        else:
+            flash("Avaliação não encontrada.", "error")
+            return redirect(url_for("admin"))
+    except sqlite3.Error as e:
+        flash(f"Erro ao remover a avaliação: {e}", "error")
+        return redirect(url_for("admin"))
+    finally:
+        conn.close()
+
 @app.route("/adicionar_carrinho", methods=["POST"])
 def adicionar_carrinho():
     produto_id = request.form.get("produto_id")
@@ -661,11 +686,17 @@ def marcar_pago(pedido_id):
     if not is_admin():
         flash("Acesso restrito ao administrador.")
         return redirect(url_for("index"))
+        
     conn = get_db()
-    conn.execute("UPDATE pedidos SET status = 'pago' WHERE id = ?", (pedido_id,))
-    conn.commit()
-    conn.close()
-    flash("Pedido marcado como pago.")
+    try:
+        conn.execute("UPDATE pedidos SET status = 'pago' WHERE id = ?", (pedido_id,))
+        conn.commit()
+        flash("Pedido marcado como pago.")
+    except sqlite3.Error as e:
+        flash(f"Erro ao processar o pedido na base de dados: {e}")
+    finally:
+        conn.close()
+        
     return redirect(url_for("admin"))
 
 @app.route("/admin/marcar_enviado/<int:pedido_id>")
@@ -673,11 +704,17 @@ def marcar_enviado(pedido_id):
     if not is_admin():
         flash("Acesso restrito ao administrador.")
         return redirect(url_for("index"))
+        
     conn = get_db()
-    conn.execute("UPDATE pedidos SET status = 'enviado' WHERE id = ?", (pedido_id,))
-    conn.commit()
-    conn.close()
-    flash("Pedido marcado como enviado.")
+    try:
+        conn.execute("UPDATE pedidos SET status = 'enviado' WHERE id = ?", (pedido_id,))
+        conn.commit()
+        flash("Pedido marcado como enviado.")
+    except sqlite3.Error as e:
+        flash(f"Erro ao processar o pedido na base de dados: {e}")
+    finally:
+        conn.close()
+        
     return redirect(url_for("admin"))
 
 @app.route("/admin/cancelar_pedido/<int:pedido_id>")
@@ -685,11 +722,35 @@ def cancelar_pedido(pedido_id):
     if not is_admin():
         flash("Acesso restrito ao administrador.")
         return redirect(url_for("index"))
+        
     conn = get_db()
-    conn.execute("UPDATE pedidos SET status = 'cancelado' WHERE id = ?", (pedido_id,))
-    conn.commit()
-    conn.close()
-    flash("Pedido cancelado.")
+    try:
+        conn.execute("UPDATE pedidos SET status = 'cancelado' WHERE id = ?", (pedido_id,))
+        conn.commit()
+        flash("Pedido cancelado.")
+    except sqlite3.Error as e:
+        flash(f"Erro ao processar o pedido na base de dados: {e}")
+    finally:
+        conn.close()
+        
+    return redirect(url_for("admin"))
+
+@app.route("/admin/remover_pedido/<int:pedido_id>")
+def remover_pedido(pedido_id):
+    if not is_admin():
+        flash("Acesso restrito ao administrador.")
+        return redirect(url_for("index"))
+        
+    conn = get_db()
+    try:
+        conn.execute("DELETE FROM pedidos WHERE id = ?", (pedido_id,))
+        conn.commit()
+        flash("Pedido removido definitivamente com sucesso.")
+    except sqlite3.Error as e:
+        flash(f"Erro ao processar o pedido na base de dados: {e}")
+    finally:
+        conn.close()
+        
     return redirect(url_for("admin"))
 
 # ---------------- ADMIN ----------------
@@ -745,14 +806,18 @@ def adicionar_produto():
         return redirect(url_for("admin"))
 
     conn = get_db()
-    conn.execute(
-        "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url)
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute(
+            "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url)
+        )
+        conn.commit()
+        flash("Produto adicionado com sucesso.")
+    except sqlite3.Error as e:
+        flash(f"Erro ao adicionar produto na base de dados: {e}")
+    finally:
+        conn.close()
 
-    flash("Produto adicionado com sucesso.")
     return redirect(url_for("admin"))
 
 @app.route("/admin/esgotar/<int:produto_id>")
@@ -831,11 +896,15 @@ def remover_produto(produto_id):
         return redirect(url_for("index"))
 
     conn = get_db()
-    conn.execute("DELETE FROM produtos WHERE id = ?", (produto_id,))
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("DELETE FROM produtos WHERE id = ?", (produto_id,))
+        conn.commit()
+        flash("Produto removido com sucesso.")
+    except sqlite3.Error as e:
+        flash(f"Erro ao remover produto: {e}")
+    finally:
+        conn.close()
 
-    flash("Produto removido com sucesso.")
     return redirect(url_for("admin"))
 
 @app.route("/admin/editar/<int:produto_id>", methods=["GET", "POST"])
@@ -876,20 +945,24 @@ def editar_produto(produto_id):
             flash("Preço inválido.")
             return redirect(url_for("editar_produto", produto_id=produto_id))
 
-        if imagem_blob:
-            conn.execute(
-                "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem = ?, imagem_blob = ?, imagem_mimetype = ?, imagem_url = ? WHERE id = ?",
-                (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url, produto_id)
-            )
-        else:
-            conn.execute(
-                "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem_url = ? WHERE id = ?",
-                (nome, cor, preco, imagem_url, produto_id)
-            )
-        conn.commit()
-        conn.close()
+        try:
+            if imagem_blob:
+                conn.execute(
+                    "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem = ?, imagem_blob = ?, imagem_mimetype = ?, imagem_url = ? WHERE id = ?",
+                    (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url, produto_id)
+                )
+            else:
+                conn.execute(
+                    "UPDATE produtos SET nome = ?, cor = ?, preco = ?, imagem_url = ? WHERE id = ?",
+                    (nome, cor, preco, imagem_url, produto_id)
+                )
+            conn.commit()
+            flash("Produto atualizado com sucesso.")
+        except sqlite3.Error as e:
+            flash(f"Erro ao atualizar produto: {e}")
+        finally:
+            conn.close()
 
-        flash("Produto atualizado com sucesso.")
         
         # Limpar temp se existir
         session.pop('upload_pendente', None)
@@ -996,5 +1069,4 @@ def gerir_cores(produto_id):
 init_db()
 
 if __name__ == "__main__":
-
     app.run(debug=True)
