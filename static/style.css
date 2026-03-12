@@ -3232,17 +3232,21 @@ select.form-control {
 }
 
 @media (max-width: 480px) {
+    .container {
+        padding: 0 16px;
+    }
+
     .hero {
-        min-height: 70vh;
+        min-height: 65vh;
     }
 
     .hero h1 {
-        font-size: 1.9rem;
-        line-height: 1.2;
+        font-size: 1.8rem;
+        line-height: 1.25;
     }
 
     .hero h1 em {
-        font-size: 2rem;
+        font-size: 1.95rem;
     }
 
     .hero-content {
@@ -3257,32 +3261,48 @@ select.form-control {
         display: none;
     }
 
-    /* Features: single col on very small screens */
+    /* Features: single col or perfectly flexible 2 col */
     .features-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        grid-template-columns: 1fr;
+        gap: 15px;
     }
 
     .feature-item {
-        flex-direction: column;
-        text-align: center;
-        gap: 6px;
+        flex-direction: row;
+        justify-content: flex-start;
+        text-align: left;
+        gap: 14px;
+        background: var(--color-rosa-lt);
+        padding: 12px 18px;
+        border-radius: 12px;
     }
 
-    /* Why Us: single col on very small */
+    .feature-icon {
+        background: var(--color-white);
+    }
+
+    /* Why Us: single col */
     .why-us-grid {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
 
-    /* Product grid */
+    /* Testimonials & Footer */
+    .testimonials-grid, 
+    .footer-inner {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    /* Product grid (forces 2 columns correctly without spilling) */
     .grid,
     .products-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
 
     .product-img-wrap {
-        height: 180px;
+        height: 150px;
     }
 
     .card-body {
@@ -3290,67 +3310,118 @@ select.form-control {
     }
 
     .product-title {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
 
     .price {
         font-size: 0.85rem;
     }
 
-    /* Product detail */
+    .product-actions .btn {
+        font-size: 0.7rem;
+        padding: 6px 10px;
+    }
+
+    /* Product detail page */
     .produto-img {
         max-width: 100%;
+        margin: 0 auto;
+    }
+
+    .produto-container,
+    .product-detail-container {
+        padding: 15px;
+        gap: 24px;
+    }
+
+    .trust-badges {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .trust-badge {
+        width: 100%;
+        background: transparent;
+        padding: 4px 0;
     }
 
     .esgotado-box {
         flex-direction: column;
-        text-align: center;
+        text-align: left;
+        padding: 16px;
     }
 
-    .trust-badges {
-        justify-content: center;
+    /* Header adjustments */
+    .header-inner {
+        gap: 10px;
     }
 
-    /* Payment */
+    .site-logo img {
+        height: 32px;
+    }
+
+    .site-logo {
+        font-size: 1.1rem;
+    }
+
+    .header-icons {
+        gap: 8px;
+    }
+
+    .icon-btn, .mobile-menu-btn {
+        font-size: 1rem;
+    }
+
+    .cart-count {
+        top: -6px;
+        right: -8px;
+        width: 16px;
+        height: 16px;
+        min-width: unset;
+        font-size: 0.6rem;
+    }
+
+    /* Section adjustments */
+    .section-header h2 {
+        font-size: 1.6rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+
+    .section {
+        padding: 35px 0;
+    }
+
+    /* Cart / Checkout */
     .payment-methods {
+        flex-direction: column;
         gap: 8px;
     }
 
     .payment-label {
-        padding: 10px;
-        min-width: 70px;
-        font-size: 0.7rem;
+        font-size: 0.8rem;
     }
 
     .checkout-steps {
-        gap: 4px;
-        font-size: 0.65rem;
-    }
-
-    .chk-step-divider {
-        width: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
     }
 
     .form-row {
         flex-direction: column;
     }
-
-    /* Header */
-    .site-logo img {
-        height: 36px;
+    
+    .form-group {
+        min-width: 100%;
     }
-
-    .site-logo {
-        font-size: 1.3rem;
-    }
-
-    /* Section header */
-    .section-header h2 {
-        font-size: 1.8rem;
-    }
-
-    .section {
-        padding: 40px 0;
+    
+     /* Auth Form fixes */
+    .auth-box {
+        padding: 20px;
     }
 }
 
