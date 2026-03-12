@@ -53,26 +53,6 @@
             }
         </script>
 
-        {% elif metodo == "MB/ATM" %}
-        <div
-            style="background:var(--color-rosa-lt); padding: 20px; border-radius: 8px; margin-bottom: 24px; text-align: left; border: 1px solid var(--color-rosa);">
-            <p style="font-weight:700; color:var(--color-vinho); margin-bottom:10px;"><i class="fas fa-university"></i>
-                Referência Multibanco</p>
-            <p style="margin-bottom:6px;"><strong>Entidade:</strong> 12345</p>
-            <p style="margin-bottom:6px;"><strong>Referência:</strong> 123 456 789</p>
-            <p><strong>Valor:</strong> <span style="font-size:1.1rem; color:var(--color-vinho); font-weight:bold;">€ {{
-                    "%.2f"|format(valor) }}</span></p>
-            <p style="font-size:0.82rem; color:var(--color-text-lt); margin-top:10px; font-style:italic;">Referência
-                válida por 3 dias.</p>
-        </div>
-
-        <div
-            style="background:#fff3cd; padding:14px; border-radius:8px; border:1px solid #ffeeba; text-align:left; margin-bottom:24px;">
-            <p style="font-size:0.9rem; color:#856404; margin:0;">
-                ⚠️ O seu pedido só será processado após a confirmação do pagamento. Pode demorar até 24h após o
-                pagamento.
-            </p>
-        </div>
         {% endif %}
 
         <div

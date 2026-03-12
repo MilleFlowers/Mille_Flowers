@@ -16,7 +16,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "mille_secret_key")
 stripe.api_key = os.environ.get("STRIPE_API_KEY", "SUA_CHAVE_SECRETA_AQUI")
 
 # Email do administrador
-ADMIN_EMAIL = "filipenetocunha@gmail.com"
+ADMIN_EMAIL = "camillealmeida2019@gmail.com"
 
 # ---------------- Context processor ----------------
 
@@ -547,21 +547,6 @@ def confirmar_pagamento():
         session["pedido_pendente_id"] = pedido_id
         return redirect(url_for("create_checkout_session"), code=307)
 
-    elif metodo == "Multibanco / ATM":
-        # Guardar pedido com status pendente
-        conn = get_db()
-        cursor = conn.execute(
-            """INSERT INTO pedidos (usuario_id, nome_cliente, email, produtos, morada, telefone, metodo_pagamento, valor_total, status, data)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (usuario_id, nome_cliente, email_cliente, produtos_texto, morada, telefone_cliente, "MB/ATM", valor_final, "pendente", data_atual)
-        )
-        pedido_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-
-        _registar_compras()
-        session.pop("carrinho", None)
-        return render_template("pedido_registado.html", metodo="MB/ATM", valor=valor_final, pedido_id=pedido_id)
 
     else:
         return "Método inválido ou não implementado", 400

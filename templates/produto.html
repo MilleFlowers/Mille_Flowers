@@ -38,9 +38,9 @@
                 <div class="produto-meta-top">
                     <span class="produto-category-pill"><i class="fas fa-leaf"></i> Flores Artesanais</span>
                     {% if produto.esgotado != 1 %}
-                    <span class="produto-stock-pill in-stock"><i class="fas fa-check-circle"></i> Em Stock</span>
+                    <span id="main-stock-pill" class="produto-stock-pill in-stock"><i class="fas fa-check-circle"></i> Em Stock</span>
                     {% else %}
-                    <span class="produto-stock-pill out-stock"><i class="fas fa-times-circle"></i> Esgotado</span>
+                    <span id="main-stock-pill" class="produto-stock-pill out-stock"><i class="fas fa-times-circle"></i> Esgotado</span>
                     {% endif %}
                 </div>
 
@@ -88,10 +88,6 @@
                     {% else %}
                     <input type="hidden" name="cor" value="normal">
                     {% endif %}
-
-                    <div id="estoque-mensagem" style="margin-top: 10px; font-weight: bold;">
-                        <!-- Mensagem de estoque injetada por JS aqui -->
-                    </div>
 
                     <div class="option-group">
                         <label>Quantidade:</label>
@@ -267,20 +263,22 @@
             return;
         }
 
-        const msgContainer = document.getElementById("estoque-mensagem");
-        if (!msgContainer) return;
+        const stockPill = document.getElementById("main-stock-pill");
+        if (!stockPill) return;
 
         const btnComprar = document.getElementById("btn-comprar");
 
         if (coresEsgotadas.includes(corSelecionada)) {
-            msgContainer.innerHTML = "<span style='color: red;'>❌ Não há estoque</span>";
+            stockPill.className = "produto-stock-pill out-stock";
+            stockPill.innerHTML = '<i class="fas fa-times-circle"></i> Sem Stock';
             if (btnComprar) {
                 btnComprar.disabled = true;
                 btnComprar.style.opacity = "0.5";
                 btnComprar.style.cursor = "not-allowed";
             }
         } else {
-            msgContainer.innerHTML = "<span style='color: green;'>✅ Em estoque</span>";
+            stockPill.className = "produto-stock-pill in-stock";
+            stockPill.innerHTML = '<i class="fas fa-check-circle"></i> Em Stock';
             if (btnComprar) {
                 btnComprar.disabled = false;
                 btnComprar.style.opacity = "1";
