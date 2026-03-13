@@ -61,8 +61,18 @@ def is_admin():
 def enviar_email(destinatario, assunto, corpo_html):
     """Envia um email formatado em HTML usando as configurações SMTP."""
     # Validar configuração SMTP (especialmente em ambiente Render)
-    if not all([SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASS]):
-        print(f"WARNING: Email não enviado para {destinatario} - SMTP não configurado corretamente (ver variáveis de ambiente).")
+    missing = []
+    if not SMTP_SERVER:
+        missing.append("SMTP_SERVER")
+    if not SMTP_PORT:
+        missing.append("SMTP_PORT")
+    if not SMTP_USER:
+        missing.append("SMTP_USER")
+    if not SMTP_PASS:
+        missing.append("SMTP_PASS")
+
+    if missing:
+        print(f"WARNING: Email não enviado para {destinatario} - variáveis em falta/invalidas: {', '.join(missing)}")
         return False
 
     msg = MIMEMultipart()
