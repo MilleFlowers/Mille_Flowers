@@ -42,22 +42,34 @@
             </div>
           </div>
           <div class="form-group">
-            <label>Morada</label>
-            <input type="text" id="morada" class="input" placeholder="Rua das Flores, 123" required>
+            <label>Rua</label>
+            <input type="text" id="rua" class="input" placeholder="Ex: Rua das Flores" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex: 2;">
+              <label>Andar / Fração</label>
+              <input type="text" id="andar" class="input" placeholder="Ex: 2º Esq ou R/C (Opcional)">
+            </div>
+            <div class="form-group">
+              <label>Nº Porta</label>
+              <input type="text" id="porta" class="input" placeholder="Ex: 123" required>
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Código Postal</label>
-              <input type="text" id="cp" class="input" placeholder="1000-001">
+              <input type="text" id="cp" class="input" placeholder="0000-000" maxlength="8" oninput="formatCP(this)">
             </div>
             <div class="form-group">
               <label>Cidade</label>
-              <input type="text" id="cidade" class="input" placeholder="Lisboa">
+              <input type="text" id="cidade" class="input" placeholder="Lisboa"
+                oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚâêîôûÂÊÎÔÛãõÃÕçÇ\s]/g, '')">
             </div>
           </div>
           <div class="form-group">
             <label>Telemóvel (MB Way)</label>
-            <input type="tel" id="telemovel" class="input" placeholder="9XXXXXXXX" maxlength="9">
+            <input type="tel" id="telemovel" class="input" placeholder="9XXXXXXXX" maxlength="9"
+              oninput="this.value = this.value.replace(/\D/g, ''); updateMBWayDisplay(this)">
           </div>
           <button class="btn btn-gold" style="margin-top:16px;" onclick="goStep(2)">
             Continuar <i class="fas fa-arrow-right"></i>
@@ -136,7 +148,8 @@
               <div class="mb-way-info">
                 <p><strong>Número:</strong> <span id="displayTelemovel">9XXXXXXXX</span></p>
                 <p class="mb-way-hint">Receberá uma notificação na sua app MB WAY para confirmar o pagamento de
-                  <strong>€ {{ "%.2f"|format(total if total >= 30 else total + 3.99) }}</strong>.</p>
+                  <strong>€ {{ "%.2f"|format(total if total >= 30 else total + 3.99) }}</strong>.
+                </p>
               </div>
             </div>
           </div>
@@ -231,12 +244,17 @@
     const metodo = document.querySelector('input[name="metodo"]:checked')?.value || 'cartao';
     const metoLabel = { cartao: 'Cartão de Crédito', mbway: 'MB Way' };
     document.getElementById('finalMetodo').value = metoLabel[metodo] || 'Cartão';
+    const rua = document.getElementById('rua')?.value || '—';
+    const andar = document.getElementById('andar')?.value || '';
+    const porta = document.getElementById('porta')?.value || '';
+    const moradaCompleta = [rua, porta, andar].filter(Boolean).join(', ');
+
     document.getElementById('reviewBlock').innerHTML = `
         <div class="review-block">
             <h4><i class="fas fa-user"></i> Dados</h4>
             <p>${document.getElementById('nome')?.value || '—'}</p>
             <p>${document.getElementById('email')?.value || '—'}</p>
-            <p>${document.getElementById('morada')?.value || '—'}, ${document.getElementById('cp')?.value || ''} ${document.getElementById('cidade')?.value || ''}</p>
+            <p>${moradaCompleta}, ${document.getElementById('cp')?.value || ''} ${document.getElementById('cidade')?.value || ''}</p>
         </div>
         <div class="review-block">
             <h4><i class="fas fa-credit-card"></i> Pagamento</h4>
@@ -259,6 +277,20 @@
     }
   }
 
+  function updateMBWayDisplay(el) {
+    const display = document.getElementById('displayTelemovel');
+    if (display) display.textContent = el.value || '9XXXXXXXX';
+  }
+
+  function formatCP(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 7);
+    if (v.length > 4) {
+      el.value = v.slice(0, 4) + '-' + v.slice(4);
+    } else {
+      el.value = v;
+    }
+  }
+
   /* Card number format */
   function formatCardNum(el) {
     let v = el.value.replace(/\D/g, '').slice(0, 16);
@@ -277,10 +309,14 @@
     document.getElementById('finalNome').value = document.getElementById('nome')?.value || '';
     document.getElementById('finalEmail').value = document.getElementById('email')?.value || '';
 
-    const morada = document.getElementById('morada')?.value || '';
+    const rua = document.getElementById('rua')?.value || '';
+    const andar = document.getElementById('andar')?.value || '';
+    const porta = document.getElementById('porta')?.value || '';
     const cp = document.getElementById('cp')?.value || '';
     const cidade = document.getElementById('cidade')?.value || '';
-    document.getElementById('finalMorada').value = [morada, cp, cidade].filter(Boolean).join(', ');
+
+    const moradaFinal = `${rua}, nº ${porta}${andar ? ', ' + andar : ''} - ${cp} ${cidade}`;
+    document.getElementById('finalMorada').value = moradaFinal;
 
     document.getElementById('finalTelemovel').value = document.getElementById('telemovel')?.value || '';
   }

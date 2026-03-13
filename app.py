@@ -8,6 +8,10 @@ from flask import Flask, render_template, request, redirect, session, url_for, f
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import requests
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import secrets
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "mille_secret_key")
@@ -16,9 +20,13 @@ app.secret_key = os.environ.get("SECRET_KEY", "mille_secret_key")
 stripe.api_key = os.environ.get("STRIPE_API_KEY", "SUA_CHAVE_SECRETA_AQUI")
 
 # Email do administrador
-ADMIN_EMAIL = "camillealmeida2019@gmail.com"
+ADMIN_EMAIL = "filipenetocunha@gmail.com"
 
-# ---------------- Context processor ----------------
+# Configurações SMTP (Exemplo: Gmail)
+SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
+SMTP_USER = os.environ.get("SMTP_USER", "geral.mille.flowers@gmail.com")
+SMTP_PASS = os.environ.get("SMTP_PASS", "bkwv sxce jttm wfrt")
 
 @app.context_processor
 def inject_globals():
@@ -45,6 +53,32 @@ def get_db():
 
 def is_admin():
     return session.get("email") == ADMIN_EMAIL
+
+# ---------------- Email helper ----------------
+
+def enviar_email(destinatario, assunto, corpo_html):
+    """Envia um email formatado em HTML usando as configurações SMTP."""
+    if not SMTP_USER or "SUA_SENHA" in SMTP_PASS:
+        print(f"WARNING: Email não enviado para {destinatario} - SMTP não configurado.")
+        return False
+
+    msg = MIMEMultipart()
+    msg['From'] = f"Mille Flowers <{SMTP_USER}>"
+    msg['To'] = destinatario
+    msg['Subject'] = assunto
+
+    msg.attach(MIMEText(corpo_html, 'html'))
+
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASS)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"ERROR: Erro ao enviar email: {e}")
+        return False
 
 # ---------------- Init DB ----------------
 
@@ -144,6 +178,24 @@ def init_db():
             data TEXT NOT NULL
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS newsletter (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            verificado INTEGER DEFAULT 0,
+            token TEXT,
+            data TEXT NOT NULL
+        )
+    """)
+    # Migrações para newsletter
+    try:
+        conn.execute("ALTER TABLE newsletter ADD COLUMN verificado INTEGER DEFAULT 0")
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE newsletter ADD COLUMN token TEXT")
+    except Exception:
+        pass
     # Migração para imagens persistentes
     try:
         conn.execute("ALTER TABLE produtos ADD COLUMN imagem_blob BLOB")
@@ -496,6 +548,132 @@ def registro():
 
     return render_template("registro.html")
 
+@app.route("/admin/remover_newsletter/<int:sub_id>")
+def remover_newsletter(sub_id):
+    if not is_admin():
+        flash("Acesso restrito ao administrador.")
+        return redirect(url_for("index"))
+    
+    conn = get_db()
+    try:
+        conn.execute("DELETE FROM newsletter WHERE id = ?", (sub_id,))
+        conn.commit()
+        flash("Subscritor removido com sucesso.")
+    except Exception as e:
+        flash(f"Erro ao remover subscritor: {e}")
+    finally:
+        conn.close()
+    
+    return redirect(url_for("admin"))
+
+# ---------------- NEWSLETTER ----------------
+
+@app.route("/newsletter/subscrever", methods=["POST"])
+def newsletter_subscrever():
+    email = request.form.get("email")
+    if not email:
+        return {"success": False, "message": "Email é obrigatório."}, 400
+    
+    conn = get_db()
+    try:
+        data_atual = datetime.now().strftime("%d/%m/%Y")
+        token = secrets.token_urlsafe(32)
+        
+        # Verificar se já existe
+        existente = conn.execute("SELECT * FROM newsletter WHERE email = ?", (email,)).fetchone()
+        
+        if existente:
+            if existente["verificado"] == 1:
+                return {"success": True, "message": "Este email já está subscrito e verificado."}
+            else:
+                # Atualizar token e re-enviar email
+                conn.execute("UPDATE newsletter SET token = ? WHERE email = ?", (token, email))
+        else:
+            conn.execute("INSERT INTO newsletter (email, data, verificado, token) VALUES (?, ?, 0, ?)", 
+                         (email, data_atual, token))
+        
+        conn.commit()
+        
+        # Enviar email de VERIFICAÇÃO (Double Opt-in)
+        link_verificacao = url_for('newsletter_verificar', token=token, _external=True)
+        assunto = "Confirme a sua subscrição — Mille Flowers ✦"
+        corpo = f"""
+        <div style="background-color: #fdfaf7; padding: 40px 20px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1e4d8;">
+                <div style="background-color: #4a0404; padding: 30px; text-align: center;">
+                    <h1 style="color: #d4af37; margin: 0; font-size: 24px; letter-spacing: 2px; text-transform: uppercase;">Mille Flowers</h1>
+                </div>
+                <div style="padding: 40px 30px; color: #333; line-height: 1.6; text-align: center;">
+                    <h2 style="color: #4a0404; font-size: 20px; margin-bottom: 20px;">Falta apenas um passo!</h2>
+                    <p>Recebemos o seu pedido para fazer parte do nosso jardim. Para garantir que foi você quem fez este pedido, por favor confirme o seu email clicando no botão abaixo:</p>
+                    
+                    <div style="text-align: center; margin: 40px 0;">
+                        <a href="{link_verificacao}" style="background-color: #d4af37; color: white; padding: 15px 35px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">Confirmar Subscrição</a>
+                    </div>
+                    
+                    <p style="font-size: 13px; color: #999;">Se não solicitou esta subscrição, pode ignorar este email com segurança.</p>
+                </div>
+                <div style="background-color: #fafafa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+                    <p style="font-size: 11px; color: #bbb; margin: 0;">Mille Flowers Lisboa — Beleza Infinita.</p>
+                </div>
+            </div>
+        </div>
+        """
+        enviar_email(email, assunto, corpo)
+        
+        return {"success": True, "message": "Enviámos um link de confirmação para o seu email!"}
+    except Exception as e:
+        return {"success": False, "message": f"Erro: {e}"}, 500
+    finally:
+        conn.close()
+
+@app.route("/newsletter/verificar/<token>")
+def newsletter_verificar(token):
+    conn = get_db()
+    subscritor = conn.execute("SELECT * FROM newsletter WHERE token = ?", (token,)).fetchone()
+    
+    if not subscritor:
+        conn.close()
+        flash("Link de verificação inválido ou expirado.")
+        return redirect(url_for('index'))
+    
+    try:
+        conn.execute("UPDATE newsletter SET verificado = 1, token = NULL WHERE id = ?", (subscritor["id"],))
+        conn.commit()
+        
+        # Enviar email de Boas-Vindas final
+        assunto = "Bem-vindo ao Jardim Mille Flowers! ✦"
+        corpo = f"""
+        <div style="background-color: #fdfaf7; padding: 40px 20px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1e4d8;">
+                <div style="background-color: #4a0404; padding: 30px; text-align: center;">
+                    <h1 style="color: #d4af37; margin: 0; font-size: 28px; letter-spacing: 2px; text-transform: uppercase;">Mille Flowers</h1>
+                    <p style="color: #f1e4d8; margin: 5px 0 0; font-size: 12px; letter-spacing: 1px;">FLORES ETERNAS, BELEZA INFINITA</p>
+                </div>
+                <div style="padding: 40px 30px; color: #333; line-height: 1.6;">
+                    <h2 style="color: #4a0404; font-size: 22px; margin-bottom: 20px; text-align: center;">Email Confirmado com Sucesso!</h2>
+                    <p>Obrigado por confirmar o seu email. A partir de agora, serás o primeiro a receber novidades sobre as nossas criações e coleções exclusivas.</p>
+                    
+                    <div style="text-align: center; margin: 40px 0;">
+                        <a href="{url_for('index', _external=True)}" style="background-color: #d4af37; color: white; padding: 15px 35px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">Visitar a Loja →</a>
+                    </div>
+                </div>
+                <div style="background-color: #fafafa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+                    <p style="font-size: 11px; color: #bbb; margin: 0;">Mille Flowers Lisboa — Beleza Infinita.</p>
+                </div>
+            </div>
+        </div>
+        """
+        enviar_email(subscritor["email"], assunto, corpo)
+        
+        flash("Email verificado com sucesso! Bem-vindo à nossa newsletter.")
+        return redirect(url_for('index'))
+    except Exception as e:
+        flash(f"Erro ao verificar email: {e}")
+        return redirect(url_for('index'))
+    finally:
+        conn.close()
+
 # ---------------- PAGAMENTO ----------------
 
 @app.route("/pagamento")
@@ -537,7 +715,7 @@ def confirmar_pagamento():
 
     if metodo == "MB Way":
         order_id = f"ORDER{int(datetime.now().timestamp())}"
-        telefone_loja = "912345678"  # Substitui pelo teu número real
+        telefone_loja = "932577476"  
 
         # Guardar pedido na base de dados
         conn = get_db()
@@ -765,9 +943,10 @@ def admin():
     produtos = conn.execute("SELECT * FROM produtos").fetchall()
     pedidos = conn.execute("SELECT * FROM pedidos").fetchall()
     cores = conn.execute("SELECT * FROM cores ORDER BY nome").fetchall()
+    subscritores = conn.execute("SELECT * FROM newsletter ORDER BY id DESC").fetchall()
     conn.close()
 
-    return render_template("admin.html", produtos=produtos, pedidos=pedidos, cores=cores)
+    return render_template("admin.html", produtos=produtos, pedidos=pedidos, cores=cores, subscritores=subscritores)
 
 @app.route("/admin/adicionar", methods=["POST"])
 def adicionar_produto():
@@ -813,6 +992,55 @@ def adicionar_produto():
         )
         conn.commit()
         flash("Produto adicionado com sucesso.")
+
+        # Notificar subscritores verificados
+        subscritores = conn.execute("SELECT email FROM newsletter WHERE verificado = 1").fetchall()
+        if subscritores:
+            # Novo: Design Chamativo para Notificação de Produto
+            assunto = f"Acabou de Florescer: {nome}! ✦"
+            corpo = f"""
+            <div style="background-color: #fdfaf7; padding: 40px 20px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1e4d8;">
+                    <!-- Header -->
+                    <div style="background-color: #4a0404; padding: 30px; text-align: center;">
+                        <h1 style="color: #d4af37; margin: 0; font-size: 28px; letter-spacing: 2px; text-transform: uppercase;">Mille Flowers</h1>
+                    </div>
+                    
+                    <!-- Feature Image Area -->
+                    <div style="padding: 0; background-color: #f1e4d8; text-align: center;">
+                        <div style="padding: 40px; background-color: #f1e4d8;">
+                            <span style="display: inline-block; padding: 5px 15px; background: #d4af37; color: white; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">NOVIDADE</span>
+                            <h2 style="color: #4a0404; font-size: 32px; margin: 0;">{nome}</h2>
+                            <p style="color: #7d635a; font-size: 16px; margin: 10px 0 0;">Uma nova peça exclusiva no nosso catálogo</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div style="padding: 40px 30px; color: #333; line-height: 1.6; text-align: center;">
+                        <p style="font-size: 18px; color: #4a0404;">Temos o prazer de anunciar uma nova criação artesanal.</p>
+                        <p>Cada detalhe foi pensado para trazer elegância e charme ao seu espaço ou para ser o presente perfeito que nunca murcha.</p>
+                        
+                        <div style="background: #fdfaf7; border: 1px dashed #d4af37; padding: 20px; border-radius: 12px; margin: 30px 0;">
+                            <p style="margin: 0; font-size: 20px; font-weight: bold; color: #4a0404;">€ {preco:.2f}</p>
+                            <p style="margin: 5px 0 0; font-size: 14px; color: #666;">Peça Limitada e Artesanal</p>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 40px 0;">
+                            <a href="{url_for('produto', id=0, _external=True).replace('0', '')}" style="background-color: #d4af37; color: white; padding: 18px 45px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block; font-size: 16px; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);">Ver Detalhes na Loja</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div style="background-color: #fafafa; padding: 25px; text-align: center; border-top: 1px solid #eee;">
+                        <p style="font-size: 12px; color: #999; margin: 0;">Mille Flowers Lisboa — Arte em Flor.</p>
+                        <p style="font-size: 11px; color: #bbb; margin: 10px 0 0;">Não responda a este email automático.</p>
+                    </div>
+                </div>
+            </div>
+            """
+            for s in subscritores:
+                enviar_email(s['email'], assunto, corpo)
+
     except sqlite3.Error as e:
         flash(f"Erro ao adicionar produto na base de dados: {e}")
     finally:

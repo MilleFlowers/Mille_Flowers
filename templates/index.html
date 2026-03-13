@@ -67,7 +67,8 @@
         <div class="section-header">
             {% if request.args.get('q') %}
             <h2>Resultados para "{{ request.args.get('q') }}"</h2>
-            <p><a href="{{ url_for('index') }}" style="color: var(--color-gold); text-decoration: underline;">← Voltar à coleção completa</a></p>
+            <p><a href="{{ url_for('index') }}" style="color: var(--color-gold); text-decoration: underline;">← Voltar à
+                    coleção completa</a></p>
             {% else %}
             <span class="section-label">Coleção Exclusiva</span>
             <h2>A Nossa Coleção</h2>
@@ -78,9 +79,11 @@
             {% for produto in produtos %}
             <div class="product-card {% if produto['esgotado'] == 1 %}soldout{% endif %}">
                 <div class="product-img-wrap">
-                    <img src="{{ produto['imagem_url'] if produto['imagem_url'] else url_for('serve_produto_imagem', produto_id=produto['id']) }}" alt="{{ produto['nome'] }}" loading="lazy">
+                    <img src="{{ produto['imagem_url'] if produto['imagem_url'] else url_for('serve_produto_imagem', produto_id=produto['id']) }}"
+                        alt="{{ produto['nome'] }}" loading="lazy">
                     <div class="product-overlay">
-                        <a href="{{ url_for('produto', id=produto['id']) }}" class="overlay-btn"><i class="fas fa-eye"></i></a>
+                        <a href="{{ url_for('produto', id=produto['id']) }}" class="overlay-btn"><i
+                                class="fas fa-eye"></i></a>
                     </div>
                     {% if produto['esgotado'] == 1 %}
                     <span class="product-badge badge-soldout">Esgotado</span>
@@ -112,17 +115,20 @@
             <div class="why-us-item">
                 <div class="why-icon"><i class="fas fa-gem"></i></div>
                 <h3>Materiais de Luxo</h3>
-                <p>Utilizamos apenas seda e cetim de alta qualidade, selecionados para garantir a melhor aparência e durabilidade.</p>
+                <p>Utilizamos apenas seda e cetim de alta qualidade, selecionados para garantir a melhor aparência e
+                    durabilidade.</p>
             </div>
             <div class="why-us-item">
                 <div class="why-icon"><i class="fas fa-heart"></i></div>
                 <h3>Feitas com Amor</h3>
-                <p>Cada flor é trabalhada com atenção ao detalhe, tornando cada peça verdadeiramente única e especial.</p>
+                <p>Cada flor é trabalhada com atenção ao detalhe, tornando cada peça verdadeiramente única e especial.
+                </p>
             </div>
             <div class="why-us-item">
                 <div class="why-icon"><i class="fas fa-leaf"></i></div>
                 <h3>Sem Manutenção</h3>
-                <p>Ao contrário das flores naturais, as nossas criações nunca murcham e não necessitam de qualquer cuidado.</p>
+                <p>Ao contrário das flores naturais, as nossas criações nunca murcham e não necessitam de qualquer
+                    cuidado.</p>
             </div>
             <div class="why-us-item">
                 <div class="why-icon"><i class="fas fa-gift"></i></div>
@@ -144,26 +150,32 @@
         <div class="testimonials-grid">
             <div class="testimonial-card">
                 <div class="testimonial-stars">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                        class="fas fa-star"></i><i class="fas fa-star"></i>
                 </div>
                 <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
-                <p class="testimonial-text">"Encomendei uma rosa vermelha para oferecer à minha namorada e ela ficou absolutamente encantada. A qualidade é incrível — parece uma flor natural!"</p>
+                <p class="testimonial-text">"Encomendei uma rosa vermelha para oferecer à minha namorada e ela ficou
+                    absolutamente encantada. A qualidade é incrível — parece uma flor natural!"</p>
                 <div class="testimonial-author">Rodrigo M.</div>
             </div>
             <div class="testimonial-card">
                 <div class="testimonial-stars">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                        class="fas fa-star"></i><i class="fas fa-star"></i>
                 </div>
                 <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
-                <p class="testimonial-text">"O buquê de casamento foi perfeito. Passados 2 anos ainda está impecável na nossa sala. Uma lembrança eterna do dia mais bonito da nossa vida."</p>
+                <p class="testimonial-text">"O buquê de casamento foi perfeito. Passados 2 anos ainda está impecável na
+                    nossa sala. Uma lembrança eterna do dia mais bonito da nossa vida."</p>
                 <div class="testimonial-author">Ana & Filipe</div>
             </div>
             <div class="testimonial-card">
                 <div class="testimonial-stars">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                        class="fas fa-star"></i><i class="fas fa-star"></i>
                 </div>
                 <div class="quote-icon"><i class="fas fa-quote-left"></i></div>
-                <p class="testimonial-text">"Presenteei a minha mãe no Dia da Mãe com uma tulipa dourada. Ela ficou sem palavras! Qualidade premium e entrega muito rápida."</p>
+                <p class="testimonial-text">"Presenteei a minha mãe no Dia da Mãe com uma tulipa dourada. Ela ficou sem
+                    palavras! Qualidade premium e entrega muito rápida."</p>
                 <div class="testimonial-author">Catarina S.</div>
             </div>
         </div>
@@ -177,7 +189,7 @@
             <div class="newsletter-content">
                 <span class="section-label" style="color: var(--color-gold-lt); opacity:0.85;">Ofertas Exclusivas</span>
                 <h2>Faça Parte do Nosso Jardim</h2>
-                <p>Subscreva a newsletter e receba <strong>10% de desconto</strong> na primeira compra.</p>
+                <p>Subscreva a newsletter e receba todas as novidades do nosso jardim.</p>
             </div>
             <form class="newsletter-form" onsubmit="handleNewsletter(event)">
                 <input type="email" placeholder="O seu melhor e-mail" required>
@@ -189,14 +201,49 @@
 {% endif %}
 
 <script>
-    function handleNewsletter(e) {
+    async function handleNewsletter(e) {
         e.preventDefault();
-        const btn = e.target.querySelector('button');
-        btn.textContent = '✓ Subscrito!';
-        btn.style.background = '#27ae60';
-        btn.style.borderColor = '#27ae60';
-        e.target.querySelector('input').value = '';
-        setTimeout(() => { btn.textContent = 'Subscrever ✉'; btn.style.background = ''; btn.style.borderColor = ''; }, 3000);
+        const form = e.target;
+        const emailInput = form.querySelector('input');
+        const btn = form.querySelector('button');
+        const originalBtnText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            const formData = new FormData();
+            formData.append('email', emailInput.value);
+
+            const response = await fetch('/newsletter/subscrever', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                btn.textContent = '✓ Subscrito!';
+                btn.style.background = '#27ae60';
+                btn.style.borderColor = '#27ae60';
+                emailInput.value = '';
+                setTimeout(() => {
+                    btn.innerHTML = originalBtnText;
+                    btn.style.background = '';
+                    btn.style.borderColor = '';
+                    btn.disabled = false;
+                }, 3000);
+            } else {
+                alert(result.message || 'Erro ao subscrever. Tente novamente.');
+                btn.innerHTML = originalBtnText;
+                btn.disabled = false;
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro de ligação ao servidor.');
+            btn.innerHTML = originalBtnText;
+            btn.disabled = false;
+        }
     }
 </script>
 
