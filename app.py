@@ -22,11 +22,13 @@ stripe.api_key = os.environ.get("STRIPE_API_KEY", "SUA_CHAVE_SECRETA_AQUI")
 # Email do administrador
 ADMIN_EMAIL = "filipenetocunha@gmail.com"
 
-# Configurações SMTP (Exemplo: Gmail)
+# Configurações SMTP - usar SEMPRE variáveis de ambiente no servidor (Render)
+# Certifica-te de que definiste no Render:
+# SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASS
 SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
-SMTP_USER = os.environ.get("SMTP_USER", "geral.mille.flowers@gmail.com")
-SMTP_PASS = os.environ.get("SMTP_PASS", "bkwv sxce jttm wfrt")
+SMTP_USER = os.environ.get("SMTP_USER")
+SMTP_PASS = os.environ.get("SMTP_PASS")
 
 @app.context_processor
 def inject_globals():
@@ -58,8 +60,9 @@ def is_admin():
 
 def enviar_email(destinatario, assunto, corpo_html):
     """Envia um email formatado em HTML usando as configurações SMTP."""
-    if not SMTP_USER or "SUA_SENHA" in SMTP_PASS:
-        print(f"WARNING: Email não enviado para {destinatario} - SMTP não configurado.")
+    # Validar configuração SMTP (especialmente em ambiente Render)
+    if not all([SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASS]):
+        print(f"WARNING: Email não enviado para {destinatario} - SMTP não configurado corretamente (ver variáveis de ambiente).")
         return False
 
     msg = MIMEMultipart()
@@ -341,9 +344,20 @@ def produto(id):
     # Fetch reviews
     avaliacoes = conn.execute("SELECT * FROM avaliacoes WHERE produto_id = ? ORDER BY id DESC", (id,)).fetchall()
     
-    # Fetch available colors for the select dropdown
-    cores_rows = conn.execute("SELECT nome FROM cores ORDER BY nome").fetchall()
-    cores_gerais = [row["nome"] for row in cores_rows]
+    # Obter cores APENAS para este produto (se existirem na tabela produto_imagens)
+    # Primeiro tentamos ver se há variantes no produto_imagens
+    cores_produto_rows = conn.execute(
+        "SELECT DISTINCT cor FROM produto_imagens WHERE nome_produto = ? ORDER BY cor",
+        (produto["nome"].capitalize(),)
+    ).fetchall()
+    
+    cores_especificas = [row["cor"] for row in cores_produto_rows]
+    
+    # Fallback ou se for cor única 'normal'
+    if not cores_especificas or (len(cores_especificas) == 1 and cores_especificas[0] == 'normal'):
+        tem_multi_cores = False
+    else:
+        tem_multi_cores = True
     
     # Verificar se o utilizador logado comprou este produto
     pode_avaliar = False
@@ -364,7 +378,13 @@ def produto(id):
     conn.close()
     if not produto:
         return redirect(url_for("index"))
-    return render_template("produto.html", produto=produto, produtos_rel=produtos_rel, avaliacoes=avaliacoes, cores_gerais=cores_gerais, pode_avaliar=pode_avaliar)
+    return render_template("produto.html", 
+                           produto=produto, 
+                           produtos_rel=produtos_rel, 
+                           avaliacoes=avaliacoes, 
+                           cores_especificas=cores_especificas, 
+                           tem_multi_cores=tem_multi_cores,
+                           pode_avaliar=pode_avaliar)
 
 @app.route("/produto/<int:id>/avaliar", methods=["POST"])
 def avaliar_produto(id):
@@ -955,27 +975,15 @@ def adicionar_produto():
         return redirect(url_for("index"))
 
     nome = request.form.get("nome")
-    cor = request.form.get("cor")
     preco = request.form.get("preco")
-    imagem_url = request.form.get("imagem_url")
-
-    imagem_blob = None
-    imagem_mimetype = None
-    imagem = ""
-    file = request.files.get("imagem_upload")
+    cor_unica = request.form.get("cor_unica") == "1"
     
-    if file and file.filename != "":
-        filename = secure_filename(file.filename)
-        # Ler conteúdo para o banco de dados
-        imagem_blob = file.read()
-        imagem_mimetype = file.content_type
-        imagem = filename
-    elif not imagem_url:
-        flash("A imagem do produto (upload ou URL) é obrigatória.")
-        return redirect(url_for("admin"))
+    # Listas de cores e ficheiros
+    cores_ids = request.form.getlist("cores[]")
+    files = request.files.getlist("imagens_upload[]")
 
-    if not (nome and cor and preco):
-        flash("Todos os campos base são obrigatórios.")
+    if not (nome and preco):
+        flash("Nome e preço são obrigatórios.")
         return redirect(url_for("admin"))
 
     try:
@@ -986,12 +994,61 @@ def adicionar_produto():
 
     conn = get_db()
     try:
-        conn.execute(
-            "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (nome, cor, preco, imagem, imagem_blob, imagem_mimetype, imagem_url)
+        if cor_unica:
+            # Caso especial: Lavanda/Flor de cor única
+            cores_nomes = ["normal"]
+        else:
+            # Obter nomes das cores a partir dos IDs
+            cores_nomes = []
+            for c_id in cores_ids:
+                c_row = conn.execute("SELECT nome FROM cores WHERE id = ?", (c_id,)).fetchone()
+                if c_row:
+                    cores_nomes.append(c_row["nome"])
+                else:
+                    cores_nomes.append("desconhecida")
+
+        if not cores_nomes or not files:
+            flash("Deve adicionar pelo menos uma cor e uma imagem.")
+            return redirect(url_for("admin"))
+
+        # Inserir o produto principal (usando a primeira variante como padrão)
+        primeira_cor = cores_nomes[0]
+        primeiro_file = files[0]
+        
+        primeira_img_blob = primeiro_file.read()
+        primeira_img_mimetype = primeiro_file.content_type
+        primeiro_filename = secure_filename(primeiro_file.filename)
+        
+        # Resetar ponteiro para ler novamente se necessário (embora vamos usar os dados já lido)
+        # Inserir na tabela produtos
+        cursor = conn.execute(
+            "INSERT INTO produtos (nome, cor, preco, imagem, imagem_blob, imagem_mimetype) VALUES (?, ?, ?, ?, ?, ?)",
+            (nome, primeira_cor, preco, primeiro_filename, primeira_img_blob, primeira_img_mimetype)
         )
+        produto_id = cursor.lastrowid
+
+        # Inserir todas as variantes na tabela produto_imagens
+        # O frontend troca imagens baseado em (nome_produto, cor)
+        for i, cor_nome in enumerate(cores_nomes):
+            if i < len(files):
+                f = files[i]
+                if i == 0:
+                    blob = primeira_img_blob
+                    mimetype = primeira_img_mimetype
+                else:
+                    blob = f.read()
+                    mimetype = f.content_type
+                
+                if blob:
+                    # Usar REPLACE para evitar duplicados se o admin tentar re-adicionar a mesma cor para o mesmo produto
+                    # No init_db a tabela produto_imagens tem UNIQUE(nome_produto, cor)
+                    conn.execute(
+                        "INSERT OR REPLACE INTO produto_imagens (nome_produto, cor, imagem_blob, imagem_mimetype) VALUES (?, ?, ?, ?)",
+                        (nome.capitalize(), cor_nome.replace(' ', '_'), blob, mimetype)
+                    )
+
         conn.commit()
-        flash("Produto adicionado com sucesso.")
+        flash(f"Produto '{nome}' e suas variantes adicionados com sucesso!")
 
         # Notificar subscritores verificados
         subscritores = conn.execute("SELECT email FROM newsletter WHERE verificado = 1").fetchall()
