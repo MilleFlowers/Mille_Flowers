@@ -22,13 +22,20 @@ stripe.api_key = os.environ.get("STRIPE_API_KEY", "SUA_CHAVE_SECRETA_AQUI")
 # Email do administrador
 ADMIN_EMAIL = "filipenetocunha@gmail.com"
 
-# Configurações SMTP - usar SEMPRE variáveis de ambiente no servidor (Render)
-# Certifica-te de que definiste no Render:
-# SMTP_SERVER, SMTP_PORT, SMTP_USER, SMTP_PASS
+# ---------------- Configuração de Email ----------------
+# 1) SMTP clássico (funciona bem em localhost;
+#    em Render free ou com Gmail pode ser bloqueado)
 SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
 SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASS = os.environ.get("SMTP_PASS")
+
+# 2) Provedor transacional via API HTTP (recomendado em Render)
+# Exemplo: SendGrid
+# Define no Render:
+# SENDGRID_API_KEY, SENDGRID_FROM (opcional)
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+SENDGRID_FROM = os.environ.get("SENDGRID_FROM", SMTP_USER or ADMIN_EMAIL)
 
 @app.context_processor
 def inject_globals():
@@ -59,8 +66,49 @@ def is_admin():
 # ---------------- Email helper ----------------
 
 def enviar_email(destinatario, assunto, corpo_html):
-    """Envia um email formatado em HTML usando as configurações SMTP."""
-    # Validar configuração SMTP (especialmente em ambiente Render)
+    """Envia um email formatado em HTML.
+    
+    Prioridade:
+      1) Se existir SENDGRID_API_KEY, usa a API HTTP do SendGrid (melhor para Render).
+      2) Caso contrário, tenta SMTP clássico.
+    """
+    # ---- 1) Tentativa via SendGrid (HTTP API) ----
+    if SENDGRID_API_KEY:
+        try:
+            headers = {
+                "Authorization": f"Bearer {SENDGRID_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "personalizations": [{
+                    "to": [{"email": destinatario}]
+                }],
+                "from": {
+                    "email": SENDGRID_FROM,
+                    "name": "Mille Flowers"
+                },
+                "subject": assunto,
+                "content": [{
+                    "type": "text/html",
+                    "value": corpo_html
+                }]
+            }
+            resp = requests.post(
+                "https://api.sendgrid.com/v3/mail/send",
+                headers=headers,
+                json=payload,
+                timeout=10
+            )
+            if 200 <= resp.status_code < 300:
+                return True
+            else:
+                print(f"ERROR: SendGrid falhou ({resp.status_code}): {resp.text}")
+                # Cai para SMTP como fallback se possível
+        except Exception as e:
+            print(f"ERROR: Exceção ao usar SendGrid: {e}")
+            # Continua e tenta SMTP como fallback
+
+    # ---- 2) Fallback: SMTP clássico ----
     missing = []
     if not SMTP_SERVER:
         missing.append("SMTP_SERVER")
@@ -72,7 +120,7 @@ def enviar_email(destinatario, assunto, corpo_html):
         missing.append("SMTP_PASS")
 
     if missing:
-        print(f"WARNING: Email não enviado para {destinatario} - variáveis em falta/invalidas: {', '.join(missing)}")
+        print(f"WARNING: Email não enviado para {destinatario} - variáveis SMTP em falta/invalidas: {', '.join(missing)}")
         return False
 
     msg = MIMEMultipart()
@@ -83,14 +131,14 @@ def enviar_email(destinatario, assunto, corpo_html):
     msg.attach(MIMEText(corpo_html, 'html'))
 
     try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
         server.send_message(msg)
         server.quit()
         return True
     except Exception as e:
-        print(f"ERROR: Erro ao enviar email: {e}")
+        print(f"ERROR: Erro ao enviar email via SMTP: {e}")
         return False
 
 # ---------------- Init DB ----------------
